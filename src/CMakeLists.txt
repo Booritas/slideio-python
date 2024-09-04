@@ -19,18 +19,24 @@ set(BINDLIB_SOURCE
    pyerror.hpp
 )
 
-pybind11_add_module(${BINDLIB_NAME} SHARED ${BINDLIB_SOURCE})
+add_library(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
 
-target_include_directories(${BINDLIB_NAME} PRIVATE ${INCLUDE_ROOT} ${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
-target_include_directories(${BINDLIB_NAME} PRIVATE ${INCLUDE_ROOT})
-target_link_libraries(${BINDLIB_NAME} PRIVATE 
-   ${SLIDEIO_LIB_NAME}
-   ${CONVERTER_LIB_NAME}
-   ${TRANSFORMER_LIB_NAME}
+#pybind11_add_module( SHARED ${BINDLIB_SOURCE})
+pybind11_extension(${BINDLIB_NAME})
+
+if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
+    # Strip unnecessary sections of the binary on Linux/macOS
+    pybind11_strip(example)
+endif()
+
+target_include_directories(${BINDLIB_NAME} PRIVATE 
+   ${INCLUDE_ROOT} 
+   ${Python3_INCLUDE_DIRS} 
+   ${Python3_NumPy_INCLUDE_DIRS}
    )
+   
+target_link_libraries(${BINDLIB_NAME} ${Python3_LIBRARIES})
 
-
-CONAN_CONFIGURE_INCLUDES(${BINDLIB_NAME})
-
+CONAN_CONFIGURE(${BINDLIB_NAME})
 
 FIX_MACOS_RPATH(${BINDLIB_NAME})

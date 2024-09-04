@@ -154,7 +154,7 @@ if (DEFINED ENV{PYTHON_LOCATION_IS_SET})
    set(Python3_NumPy_INCLUDE_DIRS $ENV{Python3_NumPy_INCLUDE_DIRS})
 else()
    message("Look for the python location")
-   #find_package (Python3 COMPONENTS Interpreter PythonLibs NumPy)
+   find_package (Python3 COMPONENTS Interpreter PythonLibs NumPy)
 endif()
 
 message(STATUS "Python: version=${Python3_VERSION}")
