@@ -16,28 +16,8 @@ set(BINDLIB_SOURCE
    pyconverter.cpp
    pytransformation.hpp
    pytransformation.cpp
+   pyerror.hpp
 )
-
-add_subdirectory(pybind11)
-
-if (DEFINED ENV{PYTHON_LOCATION_IS_SET})
-   message("Python location is set externaly")
-   set(Python3_VERSION $ENV{Python3_VERSION})
-   set(Python3_EXECUTABLE $ENV{Python3_EXECUTABLE})
-   set(Python3_INCLUDE_DIRS $ENV{Python3_INCLUDE_DIRS})
-   set(Python3_LIBRARY_DIRS $ENV{Python3_LIBRARY_DIRS})
-   set(Python3_NumPy_INCLUDE_DIRS $ENV{Python3_NumPy_INCLUDE_DIRS})
-else()
-   message("Look for the python location")
-   #find_package (Python3 COMPONENTS Interpreter PythonLibs NumPy)
-endif()
-
-message(STATUS "Python: version=${Python3_VERSION}")
-message(STATUS "Python interpreter=${Python3_EXECUTABLE}")
-message(STATUS "Python include=${Python3_INCLUDE_DIRS}")
-message(STATUS "Python libraries=${Python3_LIBRARIES}")
-message(STATUS "Python library directories=${Python3_LIBRARY_DIRS}")
-message(STATUS "Python NumPy include=${Python3_NumPy_INCLUDE_DIRS}")
 
 pybind11_add_module(${BINDLIB_NAME} SHARED ${BINDLIB_SOURCE})
 

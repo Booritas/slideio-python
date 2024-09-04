@@ -2,7 +2,7 @@
 arch=x86_64
 build_type=Debug
 compiler=Visual Studio
-compiler.runtime=MD
+compiler.runtime=MDd
 compiler.version=16
 os=Windows
 [options]

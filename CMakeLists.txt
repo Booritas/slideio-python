@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0068 OLD)
 
-set(PROJECT_NAME slide_io)
+set(PROJECT_NAME slideio-python)
 set(projectVersion 2.7.0)
 
 project(${PROJECT_NAME} VERSION ${projectVersion} LANGUAGES C CXX)
@@ -163,8 +163,6 @@ message(STATUS "Python include=${Python3_INCLUDE_DIRS}")
 message(STATUS "Python libraries=${Python3_LIBRARIES}")
 message(STATUS "Python library directories=${Python3_LIBRARY_DIRS}")
 message(STATUS "Python NumPy include=${Python3_NumPy_INCLUDE_DIRS}")
-
-pybind11_add_module(${BINDLIB_NAME} SHARED ${BINDLIB_SOURCE})
 
 add_subdirectory(src)
 
