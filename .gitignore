@@ -453,3 +453,6 @@ conaninfo.txt
 graph_info.json
 
 build/
+build_py/
+src/dist/
+src/slideio.egg-info/

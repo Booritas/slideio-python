@@ -12,7 +12,7 @@ import setuptools.command.build_py
 from distutils.version import LooseVersion
 from ctypes.util import find_library
 
-version = '2.6.'
+version = '2.7.'
 vrs_sub = '2'
 
 if os.environ.get('CI_PIPELINE_IID'):
@@ -22,8 +22,8 @@ if os.environ.get('CI_PIPELINE_IID'):
 
 version = version + vrs_sub
 
-source_dir= os.path.abspath('../../')
-build_dir= os.path.abspath('../../build_py')
+source_dir= os.path.abspath('../')
+build_dir= os.path.abspath('../build_py')
 
 def get_platform():
     platforms = {
@@ -62,7 +62,7 @@ def find_shared_libs(dir, pattern):
 
 # Get the long description from the README file
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(os.path.join(here, '../README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get requirements from requirements-dev.txt file
