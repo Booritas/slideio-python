@@ -13,7 +13,7 @@ from distutils.version import LooseVersion
 from ctypes.util import find_library
 
 version = '2.7.'
-vrs_sub = '2'
+vrs_sub = '0'
 
 if os.environ.get('CI_PIPELINE_IID'):
     ci_id = os.environ['CI_PIPELINE_IID']
@@ -188,7 +188,6 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Topic :: Scientific/Engineering :: Image Recognition',
         'Topic :: Scientific/Engineering :: Medical Science Apps.',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

@@ -74,8 +74,6 @@ def process_conan_profile(profile, trg_dir, conan_file):
     generator = "cmake_multi"
     build_libs = []
     build_libs.append('missing')
-    # build_libs.append('dcmtk')
-     # build_libs.append('ndpi-libtiff')
     command = ['conan','install',
         '-pr',profile,
         '-if',trg_dir,
@@ -171,6 +169,14 @@ def build_slideio(configuration):
         print(cmd)
         subprocess.check_call(cmd, stderr=subprocess.STDOUT)
 
+def copy_binaries(configuration):
+    os_platform = get_platform()
+    print("Start copy binaries")
+    if os_platform=="Windows":
+        cmake = "cmake.exe"
+    else:
+        cmake = "cmake"
+
 if __name__ == "__main__":
     action_help = """Type of action:
         conan:      run conan to prepare cmake files for 3rd party packages
@@ -224,3 +230,4 @@ if __name__ == "__main__":
         configure_slideio(configuration)
     if args.action in ['build','build-only']:
         build_slideio(configuration)
+        copy_binaries(configuration)

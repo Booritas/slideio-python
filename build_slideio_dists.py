@@ -53,7 +53,7 @@ def process_python_dist(bin_path):
     print(f"Source directory: {src_dir}")
     cmd = f"{bin_path} setup.py sdist bdist_wheel"
     print(f"Execute command: {cmd}")
-    result = subprocess.run(f"{cmd} sdist bdist_wheel", shell=True, cwd=src_dir, capture_output=False, text=True)
+    result = subprocess.run(cmd, shell=True, cwd=src_dir, capture_output=False, text=True)
     print(f"Exit code: {code}")
     if result.returncode !=0:
         message = f"Error processing {bin_path}"

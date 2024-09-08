@@ -4,10 +4,12 @@ cmake_policy(SET CMP0068 OLD)
 
 set(PROJECT_NAME slideio-python)
 set(projectVersion 2.7.0)
+set(LIBRARY_NAME slideiopybind)
+
 
 project(${PROJECT_NAME} VERSION ${projectVersion} LANGUAGES C CXX)
 enable_testing()
-set( CMAKE_VERBOSE_MAKEFILE off )
+set( CMAKE_VERBOSE_MAKEFILE on )
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(PYBIND11_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/pybind11/include)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
