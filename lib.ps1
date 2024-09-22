@@ -13,28 +13,39 @@ function Generate-PythonVersions {
 }
 
 # Function to create and activate conda environment
-function Create-And-Activate-CondaEnv {
+function Create-CondaEnv {
     param (
         [string]$version
     )
     Write-Host "Creating conda environment for Python $version"
     conda create -y -n "env_python_$version" python=$version
+}
+
+function Activate-CondaEnv {
+    param (
+        [string]$version
+    )
     Write-Host "Activating conda environment for Python $version"
     conda activate "env_python_$version"
-    python -m pip install numpy
 }
 
 # Function to deactivate and remove conda environment
-function Deactivate-And-Remove-CondaEnv {
+function Deactivate-CondaEnv {
     param (
         [string]$version
     )
     Write-Host "Deactivating conda environment for Python $version"
     conda deactivate
-    Write-Host "Removing conda environment for Python $version"
+}
+
+function Remove-CondaEnv {
+    param (
+        [string]$version
+    )
     conda remove -y -n "env_python_$version" --all
     Write-Host "-----end of processing python version $version"
 }
+
 
 function Repair-Wheel {
     param(
@@ -88,6 +99,23 @@ function Repair-Naming {
     }
 }
 
+function Create-CondaEnv-For-All-Versions {
+    param(
+        [string[]]$python_versions
+    )
+    foreach ($version in $python_versions) {
+        Create-CondaEnv -version $version
+    }
+}
+
+function Remove-All-CondaEnv {
+    param(
+        [string[]]$python_versions
+    )
+    foreach ($version in $python_versions) {
+        Remove-CondaEnv -version $version
+    }
+}
 
 function Build-Wheels {
     param(
@@ -95,7 +123,9 @@ function Build-Wheels {
     )
     foreach ($version in $python_versions) {
         Write-Host "-----processing python version $version"
-        Create-And-Activate-CondaEnv -version $version
+        Create-CondaEnv -version $version
+        Activate-CondaEnv -version $version
+        python -m pip install numpy
         try {
 
             $pythonPath = (Get-Command python).Source
@@ -128,7 +158,8 @@ function Build-Wheels {
             Get-ChildItem -Path .\dist
         }
         finally {
-            Deactivate-And-Remove-CondaEnv -version $version
+            Deactivate-CondaEnv -version $version
+            Remove-CondaEnv -version $version
         }
 
     }
