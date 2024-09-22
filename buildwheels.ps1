@@ -1,7 +1,6 @@
 # Check OS and platform
-$os = (Get-WmiObject -Class Win32_OperatingSystem).Caption
-$platform = (Get-WmiObject -Class Win32_Processor).Architecture
-$minversion = 12
+$ErrorActionPreference = "Stop"
+$minversion = 7
 
 # Function to generate Python versions
 function Generate-PythonVersions {
@@ -40,6 +39,58 @@ function Deactivate-And-Remove-CondaEnv {
     Write-Host "-----end of processing python version $version"
 }
 
+function Repair-Wheel {
+    param(
+        [string]$Directory
+    )
+    Write-Host "Repairing wheel file in $Directory"
+
+    $PythonVersion = ($extractDir -split '-')[2]
+    $FileName = "slideiopybind.$PythonVersion-win_amd64.pyd"
+
+    $TargetFile = Join-Path $Directory $FileName
+    if (-not (Test-Path $TargetFile)) {
+        $ExistingFile = Get-ChildItem -Path $Directory -Filter "slideiopybind*.pyd" | Select-Object -First 1
+        if ($ExistingFile) {
+            Rename-Item -Path $existingFile.FullName -NewName $FileName
+            Write-Host "Renamed $($existingFile.FullName) to $TargetFile"
+            return 1
+        }
+    }
+    return 0
+}
+
+
+function Repair-Naming {
+
+    $WheelFiles = Get-ChildItem -Path .\dist\*.whl
+
+    foreach ($WheelFile in $WheelFiles) {
+        Write-Host "Processing wheel file $WheelFile"
+        $ExtractDir = $WheelFile.BaseName
+        $ZipFile = [System.IO.Path]::ChangeExtension($WheelFile.FullName, "zip")
+
+        Write-Host "Renaming file $WheelFile to $ZipFile"
+        Rename-Item -Path $WheelFile.FullName -NewName $ZipFile
+
+        # Unzip the wheel file
+        Expand-Archive -Path $ZipFile -DestinationPath $ExtractDir
+
+        # Execute Fix-Wheel function and capture the return value
+        $FixWheelResult = Repair-Wheel -Directory $ExtractDir
+
+        # Only compress if Fix-Wheel didn't return 0
+        if ($FixWheelResult -ne 0) {
+            Remove-Item -Path $ZipFile -Force
+            # Create new wheel file
+            Compress-Archive -Path "$ExtractDir\*" -DestinationPath $ZipFile -Force
+        }
+        Rename-Item -Path $ZipFile  -NewName $WheelFile.FullName
+        # Delete the temporary directory
+        Remove-Item -Path $ExtractDir -Recurse -Force
+    }
+}
+
 Set-Location -Path .\src
 $python_versions = Generate-PythonVersions -min_version $minversion -max_version 12
 Remove-Item -Path .\dist -Recurse -Force -ErrorAction SilentlyContinue
@@ -63,3 +114,7 @@ foreach ($version in $python_versions) {
     
     Deactivate-And-Remove-CondaEnv -version $version
 }
+
+Repair-Naming
+
+Set-Location -Path ..\.

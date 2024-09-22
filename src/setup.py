@@ -161,7 +161,10 @@ class CMakeBuild(build_ext):
             shutil.copyfile(fl, destination)
 
         for lib in REDISTR_LIBS:
-            shutil.copy(find_library(lib), extdir)
+            lib_path = find_library(lib)
+            shutil.copy(lib_path, extdir)
+
+        
         
 
 setup(
