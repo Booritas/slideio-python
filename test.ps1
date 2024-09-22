@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$minversion = 11
+$minversion = 7
 $maxversion = 12
 
 . .\lib.ps1
@@ -13,7 +13,8 @@ try {
         Activate-CondaEnv -version $version
         $versionWithoutDot = $version -replace '\.', ''
         $wheelFile = Get-ChildItem -Path . -Filter "*.whl" | Where-Object { $_.Name -match "cp$($versionWithoutDot)" } | Select-Object -First 1
-        pip install $wheelFile.FullName 
+        pip install $wheelFile.FullName
+        python .\test.ps1 
     }
 }
 finally {
