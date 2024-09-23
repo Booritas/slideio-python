@@ -34,7 +34,7 @@ jobs:
     - name: Setup cmake
       uses: jwlawson/actions-setup-cmake@v2
           
-    - name: Use cmake
+    - name: display cmake version
       run: cmake --version
 
     - name: checkout
@@ -45,7 +45,8 @@ jobs:
     - name: build wheels
       run: |
         python -m pip install --upgrade pip
+        python -m pip install numpy
         python -m pip install wheel
-        python install.py -a build
+        python install.py -a build -c release
 
 
