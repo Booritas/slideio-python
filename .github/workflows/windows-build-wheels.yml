@@ -13,21 +13,33 @@ jobs:
         python-version: ["3.7","3.8","3.9","3.10","3.11","3.12"]
     steps:
 
-    - name: Install miniconda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
-
-    - name: conda list
+    - name: shouw python version
       shell: pwsh
-      run: conda list
+      run: python --version
+
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.65.0
+
+    - name: Conan version
+      run: echo "${{ steps.conan.outputs.version }}"
   
+    - name: Add digital ocean conan remote
+      run: |
+        conan remote add digitalo http://167.172.176.224
+          
     - name: checkout
       uses: actions/checkout@v2
       with:
         submodules: 'true'
 
-
+    - name: build wheels
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install wheel
+        python -m pip install twine
+        python install.py -a build
 
 
