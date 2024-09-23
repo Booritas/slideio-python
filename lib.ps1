@@ -18,7 +18,7 @@ function Create-CondaEnv {
         [string]$version
     )
     Write-Host "Creating conda environment for Python $version"
-    conda create -y -n "env_python_$version" python=$version
+    conda create -q -y -n "env_python_$version" python=$version
 }
 
 function Activate-CondaEnv {
@@ -31,10 +31,7 @@ function Activate-CondaEnv {
 
 # Function to deactivate and remove conda environment
 function Deactivate-CondaEnv {
-    param (
-        [string]$version
-    )
-    Write-Host "Deactivating conda environment for Python $version"
+    Write-Host "Deactivating conda environment"
     conda deactivate
 }
 
@@ -42,7 +39,7 @@ function Remove-CondaEnv {
     param (
         [string]$version
     )
-    conda remove -y -n "env_python_$version" --all
+    conda remove -q -y -n "env_python_$version" --all
     Write-Host "-----end of processing python version $version"
 }
 
@@ -158,7 +155,7 @@ function Build-Wheels {
             Get-ChildItem -Path .\dist
         }
         finally {
-            Deactivate-CondaEnv -version $version
+            Deactivate-CondaEnv
             Remove-CondaEnv -version $version
         }
 
