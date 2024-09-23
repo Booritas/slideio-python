@@ -1,0 +1,33 @@
+name: Windows build slideio wheels
+
+on: [workflow_dispatch]
+env:
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_DISABLE_CHECK_COMPILER: 1
+jobs:
+  build-mac-win:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+        python-version: ["3.7","3.8","3.9","3.10","3.11","3.12"]
+    steps:
+
+    - name: Install miniconda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+
+    - name: conda list
+      shell: pwsh
+      run: conda list
+  
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+
+
+
