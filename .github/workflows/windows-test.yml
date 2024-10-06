@@ -9,8 +9,20 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11']
+
     steps:
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+          
+    - name: display cmake version
+      run: cmake --version
+  
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+      
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: true
@@ -25,4 +37,17 @@ jobs:
     - name: Run tests for Python ${{ matrix.python-version }}
       run: |
         conda activate py${{ matrix.python-version }}
-        # Add your test commands here
+
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.65.0
+  
+    - name: Conan version
+      run: echo "${{ steps.conan.outputs.version }}"
+    
+    - name: Add digital ocean conan remote
+      run: |
+          conan remote add digitalo http://167.172.176.224
+  
