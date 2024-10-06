@@ -85,9 +85,11 @@ jobs:
         Get-ChildItem -Path .\dist  
 
     - name: Install wheel and run tests
+      shell: pwsh
       run: |
         conda activate py${{ matrix.python-version }}
-        pip install ./dist/*.whl
+        $wheelFile = Get-ChildItem -Path "dist" -Filter "*.whl" | Select-Object -First 1 -ExpandProperty FullName
+        python -m pip install $wheelFile
         python ./tests/test.py
 
     - uses: actions/upload-artifact@v4
