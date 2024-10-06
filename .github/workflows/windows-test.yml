@@ -34,10 +34,6 @@ jobs:
         conda activate py${{ matrix.python-version }}
         python --version
 
-    - name: Run tests for Python ${{ matrix.python-version }}
-      run: |
-        conda activate py${{ matrix.python-version }}
-
     - name: Install Conan
       id: conan
       uses: turtlebrowser/get-conan@main
@@ -62,6 +58,7 @@ jobs:
       working-directory: ./src
       shell: pwsh
       run: |
+        conda activate py${{ matrix.python-version }}
         $pythonPath = (Get-Command python).Source
         $pythonDir = Split-Path -Parent $pythonPath
         $pythonLibDir = Join-Path $pythonDir "libs"
