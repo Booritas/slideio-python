@@ -1,4 +1,4 @@
-name: Windows build slideio wheels
+name: Windows test
 
 on: [workflow_dispatch]
 env:
