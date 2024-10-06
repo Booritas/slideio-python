@@ -61,6 +61,7 @@ jobs:
         $pythonPath = (Get-Command python).Source
         $pythonDir = Split-Path -Parent $pythonPath
         $pythonLibDir = Join-Path $pythonDir "libs"
+        $version = ${{ matrix.python-version }}
 
         $env:PYTHON_EXECUTABLE = $pythonPath
         $env:Python3_EXECUTABLE = $pythonPath
