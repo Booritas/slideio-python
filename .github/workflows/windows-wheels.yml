@@ -88,7 +88,8 @@ jobs:
       shell: pwsh
       run: |
         conda activate py${{ matrix.python-version }}
-        $wheelFile = Get-ChildItem -Path "dist" -Filter "*.whl" | Select-Object -First 1 -ExpandProperty FullName
+        $wheelFile = Get-ChildItem -Path "./src/dist" -Filter "*.whl" | Select-Object -First 1 -ExpandProperty FullName
+        Write-Host "Installing wheel $wheelFile"
         python -m pip install $wheelFile
         python ./tests/test.py
 
