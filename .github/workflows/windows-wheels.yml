@@ -1,4 +1,4 @@
-name: Windows test
+name: Build Windows Wheels
 
 on: [workflow_dispatch]
 env:
@@ -89,7 +89,6 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: slideio-wheels
-        path: ./src/dist
-        overwrite: true
+        name: slideio-windows-whl-${{ matrix.python-version }}
+        path: ./src/dist/*.whl
   
