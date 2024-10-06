@@ -61,7 +61,11 @@ jobs:
         $pythonPath = (Get-Command python).Source
         $pythonDir = Split-Path -Parent $pythonPath
         $pythonLibDir = Join-Path $pythonDir "libs"
-        $version = ${{ matrix.python-version }}
+        $version = "${{ matrix.python-version }}"
+
+        Write-Host "Python path: $pythonPath"
+        Write-Host "Python directory: $pythonDir"        
+        Write-Host "Python version: $version"        
 
         $env:PYTHON_EXECUTABLE = $pythonPath
         $env:Python3_EXECUTABLE = $pythonPath
@@ -73,8 +77,6 @@ jobs:
         $env:Python3_LIBRARIES = Join-Path $pythonLibDir "python$($version.Replace('.', '')).lib"
         $env:PYTHON_LOCATION_IS_SET = 1
 
-        Write-Host "Python path: $pythonPath"
-        Write-Host "Python directory: $pythonDir"        
         
         # Build distributable
         Write-Host "Executing command in conda environment for Python $version"
