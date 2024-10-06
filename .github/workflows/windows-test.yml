@@ -1,0 +1,24 @@
+name: Windows build slideio wheels
+
+on: [workflow_dispatch]
+env:
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_DISABLE_CHECK_COMPILER: 1
+jobs:
+  build-mac-win:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-activate-base: true
+        activate-environment: ""
+    - name: create a new conda environment
+      run: |
+       conda create -n p311 python=3.11
+       conda activate p311
+       pyton --version
+
