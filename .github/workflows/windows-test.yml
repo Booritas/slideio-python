@@ -6,19 +6,23 @@ env:
   CONAN_DISABLE_CHECK_COMPILER: 1
 jobs:
   build-mac-win:
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-2019
     strategy:
       matrix:
-        os: [windows-2019]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
     steps:
-
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: true
         activate-environment: ""
-    - name: create a new conda environment
-      run: |
-       conda create -n p311 python=3.11
-       conda activate p311
-       python --version
 
+    - name: Create and activate conda environments
+      run: |
+        conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
+        conda activate py${{ matrix.python-version }}
+        python --version
+
+    - name: Run tests for Python ${{ matrix.python-version }}
+      run: |
+        conda activate py${{ matrix.python-version }}
+        # Add your test commands here
