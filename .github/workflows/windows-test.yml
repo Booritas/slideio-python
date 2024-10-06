@@ -20,5 +20,5 @@ jobs:
       run: |
        conda create -n p311 python=3.11
        conda activate p311
-       pyton --version
+       python --version
 
