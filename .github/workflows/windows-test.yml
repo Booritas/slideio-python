@@ -44,16 +44,15 @@ jobs:
       with:
         version: 1.65.0
   
-    - name: Conan version
-      run: echo "${{ steps.conan.outputs.version }}"
-    
+    - name: Conan preparation
+      run: |
+        echo "${{ steps.conan.outputs.version }}"
+        conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
+
     - name: perpare environment
       run: |
-        python -m pip install --upgrade pip
         python -m pip install numpy
         python -m pip install wheel
-        python -m pip install conan==1.65
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
 
     - name: build wheels
       working-directory: ./src
