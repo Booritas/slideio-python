@@ -86,3 +86,10 @@ jobs:
     
         python setup.py sdist bdist_wheel
         Get-ChildItem -Path .\dist  
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: slideio-wheels
+        path: ./src/dist
+        overwrite: true
+  

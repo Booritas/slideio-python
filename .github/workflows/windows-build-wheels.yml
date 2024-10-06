@@ -47,4 +47,10 @@ jobs:
         python -m pip install wheel
         python install.py -a build -c release
 
+    - uses: actions/upload-artifact@v4
+      with:
+        name: slideio-wheels
+        path: ./src/dist
+        overwrite: true
+
 
