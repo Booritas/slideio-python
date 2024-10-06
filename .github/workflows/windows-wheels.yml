@@ -33,6 +33,8 @@ jobs:
         conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
         conda activate py${{ matrix.python-version }}
         python --version
+        python -m pip install numpy
+        python -m pip install wheel
 
     - name: Install Conan
       id: conan
@@ -44,11 +46,6 @@ jobs:
       run: |
         echo "${{ steps.conan.outputs.version }}"
         conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
-
-    - name: perpare environment
-      run: |
-        python -m pip install numpy
-        python -m pip install wheel
 
     - name: install dependencies
       run: |
@@ -86,6 +83,12 @@ jobs:
     
         python setup.py sdist bdist_wheel
         Get-ChildItem -Path .\dist  
+
+    - name: Install wheel and run tests
+      run: |
+        conda activate py${{ matrix.python-version }}
+        pip install ./dist/*.whl
+        python ./tests/test.py
 
     - uses: actions/upload-artifact@v4
       with:
