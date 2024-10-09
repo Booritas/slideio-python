@@ -456,3 +456,5 @@ build/
 build_py/
 src/dist/
 src/slideio.egg-info/
+
+.DS_Store
