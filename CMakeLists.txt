@@ -23,6 +23,49 @@ include_directories(
     ${PYBIND11_INCLUDE_DIR}
 )
 
+set(LIB_NAME_PREFIX "slideio-")
+
+set(CORE_LIB_NAME "${LIB_NAME_PREFIX}core")
+set(IMAGETOOLS_LIB_NAME "${LIB_NAME_PREFIX}imagetools")
+set(SLIDEIO_LIB_NAME "slideio")
+set(GDAL_DRIVER_NAME "${LIB_NAME_PREFIX}gdal")
+set(SVS_DRIVER_NAME "${LIB_NAME_PREFIX}svs")
+set(PKE_DRIVER_NAME "${LIB_NAME_PREFIX}pke")
+set(AFI_DRIVER_NAME "${LIB_NAME_PREFIX}afi")
+set(CZI_DRIVER_NAME "${LIB_NAME_PREFIX}czi")
+set(DCM_DRIVER_NAME "${LIB_NAME_PREFIX}dcm")
+set(SCN_DRIVER_NAME "${LIB_NAME_PREFIX}scn")
+set(ZVI_DRIVER_NAME "${LIB_NAME_PREFIX}zvi")
+set(NDPI_DRIVER_NAME "${LIB_NAME_PREFIX}ndpi")
+set(VSI_DRIVER_NAME "${LIB_NAME_PREFIX}vsi")
+set(TEST_LIB_NAME "${LIB_NAME_PREFIX}test-lib")
+set(BASE_LIB_NAME "${LIB_NAME_PREFIX}base")
+set(CONVERTER_LIB_NAME "${LIB_NAME_PREFIX}converter")
+set(TRANSFORMER_LIB_NAME "${LIB_NAME_PREFIX}transformer")
+
+set(NAME_TOOL_LIB_LIST
+    "lib${SLIDEIO_LIB_NAME}.dylib"
+    "lib${CORE_LIB_NAME}.dylib"
+    "lib${GDAL_DRIVER_NAME}.dylib"
+    "lib${SVS_DRIVER_NAME}.dylib"
+    "lib${PKE_DRIVER_NAME}.dylib"
+    "lib${AFI_DRIVER_NAME}.dylib"
+    "lib${CZI_DRIVER_NAME}.dylib"
+    "lib${DCM_DRIVER_NAME}.dylib"
+    "lib${SCN_DRIVER_NAME}.dylib"
+    "lib${ZVI_DRIVER_NAME}.dylib"
+    "lib${NDPI_DRIVER_NAME}.dylib"
+    "lib${VSI_DRIVER_NAME}.dylib"
+    "lib${IMAGETOOLS_LIB_NAME}.dylib"
+    "lib${CONVERTER_LIB_NAME}.dylib"
+    "lib${BASE_LIB_NAME}.dylib"
+    "lib${TRANSFORMER_LIB_NAME}.dylib"
+    "@rpath/libgflags_nothreads.2.2.dylib"
+    "@rpath/libglog.1.dylib"
+    "@rpath/libglogd.1.dylib"
+    "@rpath/libgflags_nothreads_debug.2.2.dylib"
+)
+
 
 MACRO(SOURCE_GROUP_BY_FOLDER target)
   SET(SOURCE_GROUP_DELIMITER "/")
@@ -88,6 +131,7 @@ MACRO(FIX_MACOS_RPATH target)
     IF (APPLE)
         FOREACH(entry ${NAME_TOOL_LIB_LIST})
             string(REPLACE "@rpath/" "" new_val ${entry})
+            message("Fixing rpath for ${target}: ${entry} -> ${new_val}")
             add_custom_command(TARGET ${target}
                 POST_BUILD COMMAND
                 ${CMAKE_INSTALL_NAME_TOOL} -change ${entry} @loader_path/${new_val}
