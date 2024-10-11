@@ -112,10 +112,27 @@ macro(CONAN_CONFIGURE_INCLUDES trg)
     endforeach()
 endmacro()
 
+macro(conan_target_link_private_libraries target)
+    if(CONAN_TARGETS)
+        target_link_libraries(${target} PRIVATE ${CONAN_TARGETS})
+    else()
+        target_link_libraries(${target} PRIVATE ${CONAN_LIBS})
+        foreach(_LIB ${CONAN_LIBS_RELEASE})
+            target_link_libraries(${target} PRIVATE optimized ${_LIB})
+        endforeach()
+        foreach(_LIB ${CONAN_LIBS_DEBUG})
+            target_link_libraries(${target} PRIVATE debug ${_LIB})
+        endforeach()
+    endif()
+endmacro()
+
+
 macro(CONAN_CONFIGURE trg)
-    conan_target_link_libraries(${trg})
+    conan_target_link_private_libraries(${trg})
     CONAN_CONFIGURE_INCLUDES(${trg})
 endmacro()
+
+
 
 IF(WIN32)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)

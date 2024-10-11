@@ -19,21 +19,8 @@ set(BINDLIB_SOURCE
    pyerror.hpp
 )
 
-add_library(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
+pybind11_add_module(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
 
-pybind11_extension(${BINDLIB_NAME})
-
-if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
-    # Strip unnecessary sections of the binary on Linux/macOS
-    pybind11_strip(${BINDLIB_NAME})
-endif()
-
-target_include_directories(${BINDLIB_NAME} PRIVATE 
-   ${INCLUDE_ROOT} 
-   ${Python3_INCLUDE_DIRS} 
-   ${Python3_NumPy_INCLUDE_DIRS}
-   )
-   
 target_link_libraries(${BINDLIB_NAME} ${Python3_LIBRARIES})
 
 CONAN_CONFIGURE(${BINDLIB_NAME})
