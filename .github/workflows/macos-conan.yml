@@ -18,11 +18,13 @@ jobs:
       with:
         submodules: 'true'
 
-    - name: install miniconda
-      run: |
-        brew install --cask miniconda
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-activate-base: true
+        activate-environment: ""
         
     - name: Create and activate conda environments
+      shell: bash -el {0}
       run: |
         conda create -n py311 python=3.11 -y
         conda activate py311
@@ -32,6 +34,7 @@ jobs:
         conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} -l ${{ secrets.CONAN_USER }}
 
     - name: install dependencies
+      shell: bash  -el {0}
       run: |
         conda activate py311
         python install.py -a conan -c release
