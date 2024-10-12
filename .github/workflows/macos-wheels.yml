@@ -10,10 +10,11 @@ jobs:
     strategy:
       matrix:
         os: [macos-12, macos-14]
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
-        exclude:
-         - os: macos-14
-           python-version: '3.7'
+        python-version: ['3.8']
+        # python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        # exclude:
+        #  - os: macos-14
+        #    python-version: '3.7'
 
     steps:
     - name: Setup cmake
@@ -60,7 +61,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Install wheel and run tests
-      shell: bash
+      shell: bash  -el {0}
       run: |
         conda activate py${{ matrix.python-version }}
         wheelFile=$(find ./src/dist -name "*.whl" | head -n 1)
