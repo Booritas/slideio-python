@@ -1,0 +1,76 @@
+name: Build Macos Wheels
+
+on: [workflow_dispatch]
+env:
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_DISABLE_CHECK_COMPILER: 1
+jobs:
+  build-mac-win:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-12]
+        python-version: ['3.7','3.8']
+
+    steps:
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+          
+    - name: display cmake version
+      run: cmake --version
+  
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+      
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-activate-base: true
+        activate-environment: ""
+
+    - name: Create and activate conda environments
+      run: |
+        conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
+        conda activate py${{ matrix.python-version }}
+        python --version
+        python -m pip install numpy
+        python -m pip install wheel
+
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.65.0
+  
+    - name: Conan preparation
+      run: |
+        echo "${{ steps.conan.outputs.version }}"
+        conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
+
+    - name: install dependencies
+      run: |
+        python install.py -a conan -c release
+
+    - name: build wheels
+      working-directory: ./src
+      shell: bash
+      run: |
+        conda activate py${{ matrix.python-version }}
+        source ./define_python_env.sh
+        python setup.py sdist bdist_wheel
+
+    - name: Install wheel and run tests
+      shell: bash
+      run: |
+        conda activate py${{ matrix.python-version }}
+        wheelFile=$(find ./src/dist -name "*.whl" | head -n 1)
+        echo "Installing wheel $wheelFile"
+        python -m pip install "$wheelFile"
+        python ./tests/test.py
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: slideio- ${{ matrix.os }}-whl-${{ matrix.python-version }}
+        path: ./src/dist/*.whl
+  

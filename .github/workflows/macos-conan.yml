@@ -1,0 +1,36 @@
+name: Build Macos Wheels
+
+on: [workflow_dispatch]
+env:
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_DISABLE_CHECK_COMPILER: 1
+jobs:
+  build-mac-win:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-12, macos-14]
+
+    steps:
+  
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+      
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.65.0
+  
+    - name: Conan preparation
+      run: |
+        echo "${{ steps.conan.outputs.version }}"
+        conan remote add digitalo ${{ secrets.CONAN_SERVER }}
+        conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} -l ${{ secrets.CONAN_USER }}
+
+    - name: install dependencies
+      run: |
+        python install.py -a conan -c release
+        conan upload "*" -r digitalo --all -c
