@@ -27,6 +27,7 @@ jobs:
         
     - name: Create and activate conda environments
       run: |
+        conda init
         conda activate py311
         python --version
         python -m pip install conan==1.65.0
@@ -35,5 +36,6 @@ jobs:
 
     - name: install dependencies
       run: |
+        conda activate py311
         python install.py -a conan -c release
         conan upload "*" -r digitalo --all -c
