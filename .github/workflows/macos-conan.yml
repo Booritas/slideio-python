@@ -38,3 +38,4 @@ jobs:
       run: |
         conda activate py311
         python install.py -a conan -c release
+        # conan upload "*" -r digitalo --all -c
