@@ -28,7 +28,7 @@ jobs:
     - name: Create and activate conda environments
       run: |
         python --version
-        python -m pip install conan=1.65.0
+        python -m pip install conan==1.65.0
         conan remote add digitalo ${{ secrets.CONAN_SERVER }}
         conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} -l ${{ secrets.CONAN_USER }}
 
