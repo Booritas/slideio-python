@@ -20,13 +20,13 @@ jobs:
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
+        auto-update-conda: true
+        python-version: '3.11'
         auto-activate-base: true
-        activate-environment: ""
+        activate-environment: "py311"
         
     - name: Create and activate conda environments
       run: |
-        conda create -n py311 python=3.11 -y
-        conda activate py311
         python --version
         python -m pip install conan=1.65.0
         conan remote add digitalo ${{ secrets.CONAN_SERVER }}
