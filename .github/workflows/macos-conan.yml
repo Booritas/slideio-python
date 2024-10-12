@@ -1,4 +1,4 @@
-name: Build Macos Wheels
+name: Build Macos Conan
 
 on: [workflow_dispatch]
 env:
