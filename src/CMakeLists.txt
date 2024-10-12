@@ -21,7 +21,6 @@ set(BINDLIB_SOURCE
 
 pybind11_add_module(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
 
-target_link_libraries(${BINDLIB_NAME} ${Python3_LIBRARIES})
 
 CONAN_CONFIGURE(${BINDLIB_NAME})
 
