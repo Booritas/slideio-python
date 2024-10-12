@@ -23,15 +23,12 @@ jobs:
         auto-activate-base: true
         activate-environment: ""
         
-    - name: Install Conan
-      id: conan
-      uses: turtlebrowser/get-conan@main
-      with:
-        version: 1.65.0
-  
-    - name: Conan preparation
+    - name: Create and activate conda environments
       run: |
-        echo "${{ steps.conan.outputs.version }}"
+        conda create -n py311 python=3.11 -y
+        conda activate py311
+        python --version
+        python -m pip install conan=1.65.0
         conan remote add digitalo ${{ secrets.CONAN_SERVER }}
         conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} -l ${{ secrets.CONAN_USER }}
 
