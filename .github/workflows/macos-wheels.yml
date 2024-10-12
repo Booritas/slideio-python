@@ -30,31 +30,27 @@ jobs:
         activate-environment: ""
 
     - name: Create and activate conda environments
+      shell: bash -el {0}
       run: |
         conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
         conda activate py${{ matrix.python-version }}
         python --version
+        python -m pip install conan==1.65.0
+        conan remote add digitalo ${{ secrets.CONAN_SERVER }}
+        conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
         python -m pip install numpy
         python -m pip install wheel
 
-    - name: Install Conan
-      id: conan
-      uses: turtlebrowser/get-conan@main
-      with:
-        version: 1.65.0
   
-    - name: Conan preparation
-      run: |
-        echo "${{ steps.conan.outputs.version }}"
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
-
     - name: install dependencies
+      shell: bash -el {0}
       run: |
+        conda activate py${{ matrix.python-version }}
         python install.py -a conan -c release
 
     - name: build wheels
       working-directory: ./src
-      shell: bash
+      shell: bash -el {0}
       run: |
         conda activate py${{ matrix.python-version }}
         source ./define_python_env.sh
