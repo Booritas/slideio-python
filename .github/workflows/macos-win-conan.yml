@@ -1,4 +1,4 @@
-name: Build Macos Conan
+name: Build Windows and Macos Conan
 
 on: [workflow_dispatch]
 env:
@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-12, macos-14]
+        os: [ windows-2019, macos-14, macos-12]
 
     steps:
   
