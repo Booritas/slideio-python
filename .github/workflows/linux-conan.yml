@@ -1,4 +1,4 @@
-name: Linux build slideio wheels
+name: Linux conan packages
 
 on: [workflow_dispatch]
 jobs:
