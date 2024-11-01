@@ -30,12 +30,12 @@ jobs:
         conda activate py311
         python --version
         python -m pip install conan==1.65.0
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }}
-        conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
+        conan remote add slideio ${{ secrets.CONAN_SERVER }}
+        conan user -r slideio -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
 
     - name: install dependencies
       shell: bash  -el {0}
       run: |
         conda activate py311
         python install.py -a conan -c release
-        conan upload "*" -r digitalo --all -c
+        conan upload "*" -r slideio --all -c
