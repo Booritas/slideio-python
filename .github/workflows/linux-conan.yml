@@ -26,6 +26,5 @@ jobs:
     - name: install dependencies
       shell: bash  -el {0}
       run: |
-        conda activate py311
         python install.py -a conan -c release
         conan upload "*" -r slideio --all -c
