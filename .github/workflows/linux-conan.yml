@@ -15,8 +15,8 @@ jobs:
 
     - name: Add conan server
       run: |
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }}
-        conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
+        conan remote add slideio ${{ secrets.CONAN_SERVER }}
+        conan user -r slideio -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
 
     - name: checkout
       uses: actions/checkout@v4
@@ -26,5 +26,6 @@ jobs:
     - name: install dependencies
       shell: bash  -el {0}
       run: |
+        alias python='python3'
         python3 install.py -a conan -c release
         conan upload "*" -r slideio --all -c
