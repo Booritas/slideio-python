@@ -26,6 +26,5 @@ jobs:
     - name: install dependencies
       shell: bash  -el {0}
       run: |
-        alias python='python3'
         python3 install.py -a conan -c release
         conan upload "*" -r slideio --all -c
