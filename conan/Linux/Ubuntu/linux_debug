@@ -2,11 +2,12 @@
 os=Linux
 arch=x86_64
 compiler=gcc
-compiler.version=10
-compiler.libcxx=libstdc++11
+compiler.version=12
+compiler.libcxx=libstdc++
+compiler.cppstd=14
+openssl:compiler.version=11
 build_type=Debug
 [options]
 tinyxml2:shared=False
-boost:shared=False
 [build_requires]
 [env]
