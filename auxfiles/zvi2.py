@@ -4,7 +4,9 @@ import sys
 #import slideiopybind as sld
 import slideio as sld
 
-slide = sld.open_slide('/slideio/images/slideio_extra/testdata/cv/slideio/zvi/Zeiss-1-Merged.zvi','ZVI')
+#slide = sld.open_slide('/slideio/images/slideio_extra/testdata/cv/slideio/zvi/Zeiss-1-Merged.zvi','ZVI')
+slide = sld.open_slide('/home/stanislav/projects/slideio-main/images/slideio_extra/testdata/cv/slideio/zvi/Zeiss-1-Merged.zvi','ZVI')
 scene = slide.get_scene(0)
 print(scene)
-scene.read_block(slices=(0,3))
+scene.read_block(slices=(0,1))
+scene.read_block(slices=(0,1))

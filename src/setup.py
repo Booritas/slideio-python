@@ -97,10 +97,13 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        use_lib_dir = True # create slidieo.lib directory for all shared libraries
+        lib_dir_name = "slideio.libs"
         if not (ext.build_dir is None):
             self.build_temp = ext.build_dir
         extdir = os.path.abspath(os.path.dirname(
             self.get_ext_fullpath(ext.name)))
+        lib_dir = os.path.join(extdir, lib_dir_name)
         cmake_args = [
           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DPYTHON_EXECUTABLE=' + sys.executable
@@ -154,11 +157,19 @@ class CMakeBuild(build_ext):
         print("----Found libraries:", extra_files)
         if not os.path.exists(extdir):
             os.makedirs(extdir)
+        if use_lib_dir and not os.path.exists(lib_dir):
+            os.makedirs(lib_dir)
+        
         for fl in extra_files:
             file_name = os.path.basename(fl)
-            destination = os.path.join(extdir, file_name)
+            target_dir = lib_dir if use_lib_dir else extdir
+            if file_name.startswith("slideiopybind"):
+                target_dir = extdir
+            destination = os.path.join(target_dir, file_name)
             print("Copy",fl,"->",destination)
             shutil.copyfile(fl, destination)
+            if PLATFORM == "Linux" and use_lib_dir and file_name.startswith("slideiopybind"):
+                subprocess.check_call(['patchelf', '--set-rpath', f'$ORIGIN/{lib_dir_name}', destination])
 
         for lib in REDISTR_LIBS:
             lib_path = find_library(lib)

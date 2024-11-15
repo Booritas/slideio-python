@@ -456,6 +456,7 @@ graph_info.json
 build/
 build_py/
 src/dist/
+src/wheelhouse/
 src/slideio.egg-info/
 
 .DS_Store
