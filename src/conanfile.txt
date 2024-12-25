@@ -1,3 +1,3 @@
 [requires]
 slideio/2.7.0@slideio/stable
-boost/1.81.0@slideio/stable
+boost/1.86.0

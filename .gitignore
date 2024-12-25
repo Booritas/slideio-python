@@ -459,3 +459,5 @@ src/dist/
 src/slideio.egg-info/
 
 .DS_Store
+*/cmake/
+CMakeUserPresets.json

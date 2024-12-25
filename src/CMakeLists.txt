@@ -2,7 +2,12 @@ set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(BINDLIB_NAME ${LIBRARY_NAME})
 set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
 
-CONAN_MAIN()
+find_package(slideio)
+find_package(Boost)
+
+target_link_libraries(${LIBRARY_NAME} slideio::slideio)
+target_link_libraries(${LIBRARY_NAME} boost::boost)
+
 
 set(BINDLIB_SOURCE 
    pybind.cpp
@@ -21,13 +26,10 @@ set(BINDLIB_SOURCE
 
 pybind11_add_module(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
 
-
-CONAN_CONFIGURE(${BINDLIB_NAME})
-
 FIX_MACOS_RPATH(${BINDLIB_NAME})
 
-file(GLOB BIN_DEBUG_FILES ${CONAN_BIN_DIRS_SLIDEIO_DEBUG}/*.*)
-file(GLOB BIN_RELEASE_FILES ${CONAN_BIN_DIRS_SLIDEIO_RELEASE}/*.*)
+file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
+file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
 
 add_custom_command(TARGET ${BINDLIB_NAME} PRE_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy 
