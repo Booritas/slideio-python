@@ -12,6 +12,7 @@ build_wheel()
 
 set -e
 
+cd ./src
 rm -rf ./dist
 rm -rf ../../build
 
@@ -35,3 +36,5 @@ do
   echo "Processing $f file..."
   auditwheel repair $f
 done
+
+cd ..
