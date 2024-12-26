@@ -1,11 +1,11 @@
 [settings]
-os=Macos
+os=Linux
 arch=x86_64
-compiler=apple-clang
-compiler.version=13.0
-compiler.libcxx=libc++
-build_type=Debug
+compiler=gcc
+compiler.version=13
+compiler.libcxx=libstdc++
 compiler.cppstd=14
+build_type=Debug
 [options]
 boost/*:without_log= True
 boost/*:without_mpi= True
