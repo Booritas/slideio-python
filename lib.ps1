@@ -149,10 +149,14 @@ function Build-Wheels {
             python --version
             Write-Host "Installing wheel in conda environment for Python $version"
             python -m pip install wheel
-            python -m pip install conan==1.65
+            python -m pip install conan
         
             python setup.py sdist bdist_wheel
             Get-ChildItem -Path .\dist
+        }
+        catch {
+            Write-Host "An error occurred: $_"
+            return
         }
         finally {
             Deactivate-CondaEnv
