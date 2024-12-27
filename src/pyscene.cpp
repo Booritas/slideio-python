@@ -5,7 +5,7 @@
 #include <pybind11/numpy.h>
 #include <boost/format.hpp>
 #include "pyslide.hpp"
-#include "slideio/base/exceptions.hpp"
+#include "pyerror.hpp"
 
 namespace py = pybind11;
 
@@ -239,7 +239,7 @@ int PyScene::getNumZoomLevels() const {
 const slideio::LevelInfo& PyScene::getZoomLevelInfo(int zoomLevel) const {
     const slideio::LevelInfo* info = m_scene->getLevelInfo(zoomLevel);
     if(info==nullptr) {
-        RAISE_RUNTIME_ERROR << "Unexpected null pointer received for zoom level:" << zoomLevel;
+        RAISE_PYERROR << "Unexpected null pointer received for zoom level:" << zoomLevel;
     }
     return *info;
 }

@@ -4,9 +4,6 @@
 #include "pyglobals.hpp"
 #include <slideio/slideio/slideio.hpp>
 #include <boost/format.hpp>
-#include <opencv2/core/mat.hpp>
-
-#include "slideio/core/tools/cvtools.hpp"
 
 namespace py = pybind11;
 
@@ -61,33 +58,7 @@ static slideio::DataType typeFromNumpyType(const pybind11::dtype& type)
     throw std::runtime_error("Cannot convert numpy data type to internal type");
 }
 
-static cv::Mat fromNumpy2Mat(py::array& np_array)
-{
-    slideio::DataType dt = typeFromNumpyType(np_array.dtype());
-    int cvType = slideio::CVTools::toOpencvType(dt);
-    size_t dims = np_array.ndim();
-    if(dims>3) {
-        throw std::runtime_error("Only 2D images are supported.");
-    }
-    int width = (int)np_array.shape(0);
-    int height = (int)np_array.shape(1);
-    int channels = 1;
-    if(dims>2) {
-        channels = (int)np_array.shape(2);
-    }
-    cv::Mat mat(height, width, CV_MAKETYPE(cvType, channels), np_array.mutable_data());
-    return mat;
-}
-
-double pyCompareImages(py::array& left, py::array& right)
-{
-    cv::Mat leftMat = fromNumpy2Mat(left);
-    cv::Mat rightMat = fromNumpy2Mat(right);
-    double sim = slideio::ImageTools::computeSimilarity(leftMat, rightMat);
-    return sim;
-}
-
 void pySetLogLevel(const std::string& level)
 {
-    slideio::ImageDriverManager::setLogLevel(level);
+    slideio::setLogLevel(level);
 }
