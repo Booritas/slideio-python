@@ -462,3 +462,4 @@ src/slideio.egg-info/
 */cmake/
 CMakeUserPresets.json
 */wheelhouse/
+cmake/

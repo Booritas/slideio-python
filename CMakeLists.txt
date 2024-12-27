@@ -99,42 +99,6 @@ ELSEIF(UNIX)
 ENDIF()
 
 
-macro(CONAN_MAIN)
-    include(conanbuildinfo_multi.cmake)
-    conan_basic_setup()
-endmacro()
-
-macro(CONAN_CONFIGURE_INCLUDES trg)
-    foreach(_DIR ${CONAN_INCLUDE_DIRS_RELEASE})
-        target_include_directories(${trg} PRIVATE ${_DIR})
-    endforeach()
-    foreach(_DIR ${CONAN_INCLUDE_DIRS_DEBUG})
-        target_include_directories(${trg} PRIVATE ${_DIR})
-    endforeach()
-endmacro()
-
-macro(conan_target_link_private_libraries target)
-    if(CONAN_TARGETS)
-        target_link_libraries(${target} PRIVATE ${CONAN_TARGETS})
-    else()
-        target_link_libraries(${target} PRIVATE ${CONAN_LIBS})
-        foreach(_LIB ${CONAN_LIBS_RELEASE})
-            target_link_libraries(${target} PRIVATE optimized ${_LIB})
-        endforeach()
-        foreach(_LIB ${CONAN_LIBS_DEBUG})
-            target_link_libraries(${target} PRIVATE debug ${_LIB})
-        endforeach()
-    endif()
-endmacro()
-
-
-macro(CONAN_CONFIGURE trg)
-    conan_target_link_private_libraries(${trg})
-    CONAN_CONFIGURE_INCLUDES(${trg})
-endmacro()
-
-
-
 IF(WIN32)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
@@ -166,46 +130,6 @@ MACRO(HIDE_LIB LIB)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,${LIB}")
     endif()
 ENDMACRO(HIDE_LIB)
-
-macro(macos_conan_target_link_libraries_with_hide target hide)
-
-    SET(HIDE_CANDIDATES_DEBUG ${CONAN_LIBS_DEBUG})
-    SET(NORMAL_DEBUG ${CONAN_LIBS_DEBUG})
-    LIST(FILTER HIDE_CANDIDATES_DEBUG INCLUDE REGEX ${hide})
-    LIST(FILTER NORMAL_DEBUG EXCLUDE REGEX ${hide})
-
-    SET(HIDE_CANDIDATES_RELEASE ${CONAN_LIBS_RELEASE})
-    SET(NORMAL_RELEASE ${CONAN_LIBS_RELEASE})
-    LIST(FILTER HIDE_CANDIDATES_RELEASE INCLUDE REGEX ${hide})
-
-    LIST(FILTER NORMAL_RELEASE EXCLUDE REGEX ${hide})
-
-    set(HIDDEN_DEBUG "")
-    foreach(_LIB ${HIDE_CANDIDATES_DEBUG})
-        LIST(APPEND HIDDEN_DEBUG "-load_hidden ${_LIB}")
-    endforeach()
-    
-    set(HIDDEN_RELEASE "")
-    foreach(_LIB ${HIDE_CANDIDATES_RELEASE})
-        LIST(APPEND HIDDEN_RELEASE "-load_hidden ${_LIB}")
-    endforeach()
-
-    if(CONAN_TARGETS)
-        target_link_libraries(${target} ${CONAN_TARGETS})
-    else()
-        target_link_libraries(${target} ${CONAN_LIBS})
-        target_link_libraries(${target} $<$<CONFIG:Debug>:${NORMAL_DEBUG}>$<$<CONFIG:Release>:${NORMAL_RELEASE}>)
-        target_link_libraries(${target} $<$<CONFIG:Debug>:${HIDDEN_DEBUG}>$<$<CONFIG:Release>:${HIDDEN_RELEASE}>)
-    endif()
-endmacro()
-
-macro(conan_target_link_libraries_with_hide target hide)
-    IF(APPLE)
-        macos_conan_target_link_libraries_with_hide(${target} ${hide})
-    ELSE()
-        conan_target_link_libraries(${target} ${hide})
-    ENDIF()
-endmacro()
 
 add_subdirectory(pybind11)
 

@@ -29,13 +29,13 @@ pybind11_add_module(${BINDLIB_NAME} MODULE ${BINDLIB_SOURCE})
 
 target_link_libraries(${BINDLIB_NAME} PRIVATE slideio::slideio)
 target_link_libraries(${BINDLIB_NAME} PRIVATE boost::boost)
+set_target_properties(${BINDLIB_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(${BINDLIB_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
 
 FIX_MACOS_RPATH(${BINDLIB_NAME})
 
 file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
 file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
-message(STATUS "-----BIN_DEBUG_FILES: ${BIN_DEBUG_FILES}")
-message(STATUS "-----BIN_RELEASE_FILES: ${BIN_RELEASE_FILES}")
 
 add_custom_command(TARGET ${BINDLIB_NAME} PRE_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy 

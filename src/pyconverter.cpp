@@ -3,10 +3,9 @@
 // of this distribution and at http://slideio.com/license.html.
 #include "pyscene.hpp"
 #include "pyconverter.hpp"
-#include "pyerror.hpp"
-#include <slideio/converter/converter.hpp>
-#include <slideio/converter/converterparameters.hpp>
-#include "pyerror.hpp"
+#include "slideio/base/exceptions.hpp"
+#include "slideio/converter/converter.hpp"
+#include "slideio/converter/converterparameters.hpp"
 
 namespace py = pybind11;
 
@@ -22,11 +21,11 @@ ConverterParameters* pyCreateConverterParameters(ImageFormat format, Compression
             params = new SVSJp2KConverterParameters;
         }
         else {
-            RAISE_PYERROR << "Unknown encoding for SVS m_format: " << (int)encoding;
+            RAISE_RUNTIME_ERROR << "Unknown encoding for SVS m_format: " << (int)encoding;
         }
     }
     else {
-        RAISE_PYERROR << "Unknown m_format: " << (int)format;
+        RAISE_RUNTIME_ERROR << "Unknown m_format: " << (int)format;
     }
     return params;
 }
