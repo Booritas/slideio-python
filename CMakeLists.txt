@@ -6,10 +6,17 @@ set(PROJECT_NAME slideio-python)
 set(projectVersion 2.7.0)
 set(LIBRARY_NAME slideiopybind)
 
+set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
+    cmake_policy(SET CMP0167 NEW)
+endif()
 
 project(${PROJECT_NAME} VERSION ${projectVersion} LANGUAGES C CXX)
-enable_testing()
-set( CMAKE_VERBOSE_MAKEFILE on )
+set(CMAKE_VERBOSE_MAKEFILE off)
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(PYBIND11_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/pybind11/include)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -18,141 +25,78 @@ set(CMAKE_CXX_STANDARD_REQUIRED, ON)
 set(CMAKE_CXX_STANDARD,14)
 set(CONAN_DISABLE_CHECK_COMPILER ON)
 
+IF(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    add_compile_definitions(_FILE_OFFSET_BITS=64)
+ELSEIF(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+ENDIF()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wno-switch)
+    add_compile_options(-Wno-switch-default)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+    endif()
+endif()
+
+add_subdirectory(pybind11)
 
 include_directories(
     ${INCLUDE_ROOT} 
     ${PYBIND11_INCLUDE_DIR}
 )
 
-set(LIB_NAME_PREFIX "slideio-")
+find_package(slideio)
+find_package(Boost)
 
-set(CORE_LIB_NAME "${LIB_NAME_PREFIX}core")
-set(IMAGETOOLS_LIB_NAME "${LIB_NAME_PREFIX}imagetools")
-set(SLIDEIO_LIB_NAME "slideio")
-set(GDAL_DRIVER_NAME "${LIB_NAME_PREFIX}gdal")
-set(SVS_DRIVER_NAME "${LIB_NAME_PREFIX}svs")
-set(PKE_DRIVER_NAME "${LIB_NAME_PREFIX}pke")
-set(AFI_DRIVER_NAME "${LIB_NAME_PREFIX}afi")
-set(CZI_DRIVER_NAME "${LIB_NAME_PREFIX}czi")
-set(DCM_DRIVER_NAME "${LIB_NAME_PREFIX}dcm")
-set(SCN_DRIVER_NAME "${LIB_NAME_PREFIX}scn")
-set(ZVI_DRIVER_NAME "${LIB_NAME_PREFIX}zvi")
-set(NDPI_DRIVER_NAME "${LIB_NAME_PREFIX}ndpi")
-set(VSI_DRIVER_NAME "${LIB_NAME_PREFIX}vsi")
-set(TEST_LIB_NAME "${LIB_NAME_PREFIX}test-lib")
-set(BASE_LIB_NAME "${LIB_NAME_PREFIX}base")
-set(CONVERTER_LIB_NAME "${LIB_NAME_PREFIX}converter")
-set(TRANSFORMER_LIB_NAME "${LIB_NAME_PREFIX}transformer")
-
-set(NAME_TOOL_LIB_LIST
-    "lib${SLIDEIO_LIB_NAME}.dylib"
-    "lib${CORE_LIB_NAME}.dylib"
-    "lib${GDAL_DRIVER_NAME}.dylib"
-    "lib${SVS_DRIVER_NAME}.dylib"
-    "lib${PKE_DRIVER_NAME}.dylib"
-    "lib${AFI_DRIVER_NAME}.dylib"
-    "lib${CZI_DRIVER_NAME}.dylib"
-    "lib${DCM_DRIVER_NAME}.dylib"
-    "lib${SCN_DRIVER_NAME}.dylib"
-    "lib${ZVI_DRIVER_NAME}.dylib"
-    "lib${NDPI_DRIVER_NAME}.dylib"
-    "lib${VSI_DRIVER_NAME}.dylib"
-    "lib${IMAGETOOLS_LIB_NAME}.dylib"
-    "lib${CONVERTER_LIB_NAME}.dylib"
-    "lib${BASE_LIB_NAME}.dylib"
-    "lib${TRANSFORMER_LIB_NAME}.dylib"
-    "@rpath/libgflags_nothreads.2.2.dylib"
-    "@rpath/libglog.1.dylib"
-    "@rpath/libglogd.1.dylib"
-    "@rpath/libgflags_nothreads_debug.2.2.dylib"
+set(BINDLIB_SOURCE 
+   src/pybind.cpp
+   src/pyglobals.hpp
+   src/pyglobals.cpp
+   src/pyslide.hpp
+   src/pyslide.cpp
+   src/pyscene.hpp
+   src/pyscene.cpp
+   src/pyconverter.hpp
+   src/pyconverter.cpp
+   src/pytransformation.hpp
+   src/pytransformation.cpp
+   src/pyerror.hpp
 )
 
+pybind11_add_module(${LIBRARY_NAME} SHARED ${BINDLIB_SOURCE})
+pybind11_extension(${LIBRARY_NAME})
 
-MACRO(SOURCE_GROUP_BY_FOLDER target)
-  SET(SOURCE_GROUP_DELIMITER "/")
-  SET(last_dir "")
-  SET(files "")
-  FOREACH(file ${${target}})
-    file(RELATIVE_PATH relative_file "${CMAKE_CURRENT_LIST_DIR}/${target}" ${file})
-    GET_FILENAME_COMPONENT(dir "${relative_file}" PATH)
-    IF (NOT "${dir}" STREQUAL "${last_dir}")
-      IF (files)
-        SOURCE_GROUP("${last_dir}" FILES ${files})
-      ENDIF (files)
-      SET(files "")
-    ENDIF (NOT "${dir}" STREQUAL "${last_dir}")
-    SET(files ${files} ${file})
-    SET(last_dir "${dir}")
-    STRING(REPLACE ".." "src" last_dir ${last_dir})
-  ENDFOREACH(file)
-  IF (files)
-    SOURCE_GROUP("${last_dir}" FILES ${files})
-  ENDIF (files)
-ENDMACRO(SOURCE_GROUP_BY_FOLDER)
+message(STATUS "Python Include directory: ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 
-IF(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++14")
-    add_compile_definitions(_FILE_OFFSET_BITS=64)
-ELSEIF(UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
-    add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
-ENDIF()
+include(helper.cmake)
 
+target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
+target_link_libraries(${LIBRARY_NAME} PRIVATE boost::boost)
+set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
 
-IF(WIN32)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin)
-ELSE()
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-ENDIF(WIN32)
-
-MACRO(FIX_MACOS_RPATH target)
-    IF (APPLE)
-        FOREACH(entry ${NAME_TOOL_LIB_LIST})
-            string(REPLACE "@rpath/" "" new_val ${entry})
-            message("Fixing rpath for ${target}: ${entry} -> ${new_val}")
-            add_custom_command(TARGET ${target}
-                POST_BUILD COMMAND
-                ${CMAKE_INSTALL_NAME_TOOL} -change ${entry} @loader_path/${new_val}
-                $<TARGET_FILE:${target}>)
-        ENDFOREACH()
-    ENDIF()
-ENDMACRO(FIX_MACOS_RPATH)
-
-
-set(TEST_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-
-MACRO(HIDE_LIB LIB)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,${LIB}")
-    endif()
-ENDMACRO(HIDE_LIB)
-
-add_subdirectory(pybind11)
-
-if (DEFINED ENV{PYTHON_LOCATION_IS_SET})
-   message("Python location is set externaly")
-   set(Python3_VERSION $ENV{Python3_VERSION})
-   set(Python3_EXECUTABLE $ENV{Python3_EXECUTABLE})
-   set(Python3_INCLUDE_DIRS $ENV{Python3_INCLUDE_DIRS})
-   set(Python3_LIBRARY_DIRS $ENV{Python3_LIBRARY_DIRS})
-   set(Python3_NumPy_INCLUDE_DIRS $ENV{Python3_NumPy_INCLUDE_DIRS})
-   set(Python3_LIBRARIES $ENV{Python3_LIBRARIES})
-else()
-   message("Look for the python location")
-   find_package (Python3 COMPONENTS Interpreter PythonLibs NumPy)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_options(${LIBRARY_NAME} PRIVATE "-Wl,-Bsymbolic")
 endif()
 
-message(STATUS "Python: version=${Python3_VERSION}")
-message(STATUS "Python interpreter=${Python3_EXECUTABLE}")
-message(STATUS "Python include=${Python3_INCLUDE_DIRS}")
-message(STATUS "Python libraries=${Python3_LIBRARIES}")
-message(STATUS "Python library directories=${Python3_LIBRARY_DIRS}")
-message(STATUS "Python NumPy include=${Python3_NumPy_INCLUDE_DIRS}")
+FIX_MACOS_RPATH(${LIBRARY_NAME})
 
-add_subdirectory(src)
+file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
+file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
 
-
+add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy 
+   "$<$<CONFIG:Release>:${BIN_RELEASE_FILES}>$<$<CONFIG:Debug>:${BIN_DEBUG_FILES}>" 
+   "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
+   COMMAND_EXPAND_LISTS
+   VERBATIM
+)

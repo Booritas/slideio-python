@@ -454,12 +454,11 @@ conaninfo.txt
 graph_info.json
 
 build/
-build_py/
-src/dist/
-src/slideio.egg-info/
+dist/
+slideio.egg-info/
 
 .DS_Store
 */cmake/
 CMakeUserPresets.json
-*/wheelhouse/
+wheelhouse/
 cmake/

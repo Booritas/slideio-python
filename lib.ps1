@@ -144,7 +144,6 @@ function Build-Wheels {
             
             # Build distributable
             Remove-Item -Path .\build -Recurse -Force -ErrorAction SilentlyContinue
-            Remove-Item -Path ..\..\build_py -Recurse -Force -ErrorAction SilentlyContinue
             Write-Host "Executing command in conda environment for Python $version"
             python --version
             Write-Host "Installing wheel in conda environment for Python $version"

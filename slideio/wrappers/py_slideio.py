@@ -8,7 +8,7 @@ Slideio supports 2D slides as well as 3D data sets and time series.
 import sys
 import os
 
-from ..core import core_convert_scene, core_convert_scene_ex, core_open_slide, core_transform_scene, core_set_log_level, core_get_driver_ids, core_compare_images
+from ..core import core_convert_scene, core_convert_scene_ex, core_open_slide, core_transform_scene, core_set_log_level, core_get_driver_ids
 
 class Scene(object):
     '''slideio Scene class.

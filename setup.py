@@ -22,8 +22,8 @@ if os.environ.get('CI_PIPELINE_IID'):
 
 version = version + vrs_sub
 
-source_dir= os.path.abspath('../')
-build_dir= os.path.abspath('../build_py')
+source_dir= os.path.abspath('./')
+build_dir= os.path.abspath('./build')
 
 def get_platform():
     platforms = {
@@ -62,7 +62,7 @@ def find_shared_libs(dir, pattern):
 
 # Get the long description from the README file
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, '../README.md'), encoding='utf-8') as f:
+with open(os.path.join(here, './README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get requirements from requirements-dev.txt file
@@ -101,13 +101,14 @@ class CMakeBuild(build_ext):
             self.build_temp = ext.build_dir
         extdir = os.path.abspath(os.path.dirname(
             self.get_ext_fullpath(ext.name)))
+        print(f"----Python executable: {sys.executable}")
         cmake_args = [
           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DPYTHON_EXECUTABLE=' + sys.executable,
             '-DCMAKE_TOOLCHAIN_FILE=./cmake/conan_toolchain.cmake'
         ]
 
-        cfg = 'Release'
+        cfg = 'Debug'
         build_args = ['--config', cfg, "--target", "slideiopybind"]
 
         if platform.system() == "Windows":
@@ -129,8 +130,10 @@ class CMakeBuild(build_ext):
             env.get('CXXFLAGS', ''),
             self.distribution.get_version()
         )
+        print(f"----Creation build directory: {self.build_temp}")
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
+        print(f"----Executing cmake, source directory: {ext.source_dir}, build directory: {self.build_temp}")
         subprocess.check_call(
             ['cmake', ext.source_dir] + cmake_args,
             cwd=self.build_temp, env=env
@@ -163,19 +166,19 @@ class CMakeBuild(build_ext):
             file_name = os.path.basename(fl)
             destination = os.path.join(wheel_lib_dir, file_name)
             print("Copy",fl,"->",destination)
-            shutil.copyfile(fl, destination, follow_symlinks=False)
+            shutil.move(fl, destination)
 
         for lib in REDISTR_LIBS:
             shutil.copy(find_library(lib), wheel_lib_dir)
 
-        if PLATFORM == "Linux":
-            # Modify rpath for files with prefix 'libslideio' and suffix 'so'
-            for root, dirs, files in os.walk(wheel_lib_dir):
-                for file in files:
-                    if file.startswith('libslideio') and file.endswith('.so'):
-                        file_path = os.path.join(root, file)
-                        print("Modifying rpath for", file_path)
-                        subprocess.check_call(['patchelf', '--set-rpath', '$ORIGIN', file_path])        
+        # if PLATFORM == "Linux":
+        #     # Modify rpath for files with prefix 'libslideio' and suffix 'so'
+        #     for root, dirs, files in os.walk(wheel_lib_dir):
+        #         for file in files:
+        #             if file.startswith('libslideio') and file.endswith('.so'):
+        #                 file_path = os.path.join(root, file)
+        #                 print("Modifying rpath for", file_path)
+        #                 subprocess.check_call(['patchelf', '--set-rpath', '$ORIGIN', file_path])        
         
 
 setup(

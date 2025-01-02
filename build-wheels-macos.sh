@@ -58,7 +58,7 @@ for version in "${python_versions[@]}"; do
    echo "-----processing python verion $version"
 
    create_and_activate_conda_env $version
-   
+  
    # Build distributable
    rm -rf ./build
    rm -rf ../../build_py
