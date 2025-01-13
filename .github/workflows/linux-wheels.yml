@@ -5,19 +5,11 @@ jobs:
   build-linux:
     runs-on: ubuntu-20.04
     container:
-      image: booritas/slideio-manylinux_2_28_x86_64:v3.0.0
+      image: booritas/slideio-py:v2.7.0
       env:
         CONAN_REVISIONS_ENABLED: 1
 
     steps:
-    - name: Install conan
-      run: python3 -m pip install -U conan==1.65.0
-
-    - name: Add conan server
-      run: |
-        conan remote add slideio ${{ secrets.CONAN_SERVER }}
-        conan user -r slideio -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
-
     - name: checkout
       uses: actions/checkout@v4
       with:
@@ -27,4 +19,14 @@ jobs:
       shell: bash  -el {0}
       run: |
         python3 install.py -a conan -c release
-        conan upload "*" -r slideio --all -c
+
+    - name: build wheels
+      shell: bash  -el {0}
+      run: |
+        ./build-wheels-manylinux.sh
+  
+    - uses: actions/upload-artifact@v4
+      with:
+        name: wheels
+        path: ./wheelhouse
+  
