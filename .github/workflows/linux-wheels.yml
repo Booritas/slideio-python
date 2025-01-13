@@ -1,4 +1,4 @@
-name: Linux conan packages
+name: Linux Wheels
 
 on: [workflow_dispatch]
 jobs:
