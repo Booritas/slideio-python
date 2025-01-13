@@ -3,7 +3,7 @@
 // of this distribution and at http://slideio.com/license.html.
 #include "pyglobals.hpp"
 #include <slideio/slideio/slideio.hpp>
-#include <boost/format.hpp>
+#include "pyerror.hpp"
 
 namespace py = pybind11;
 
@@ -12,8 +12,7 @@ std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string&
     std::shared_ptr<slideio::Slide> slide = slideio::openSlide(path, driver);
     if(!slide)
     {
-        throw std::runtime_error(
-            (boost::format("Cannot open file \"%1%\" with driver \"%2%\"") % path % driver).str());
+        RAISE_PYERROR << "Cannot open file \"" << path << "\" with driver \"" << driver << "\"";
     }
     PySlide* pySlide = new PySlide(slide);
     std::shared_ptr<PySlide> wrapper(pySlide);
@@ -55,7 +54,7 @@ static slideio::DataType typeFromNumpyType(const pybind11::dtype& type)
     {
         return slideio::DataType::DT_Float64;
     }
-    throw std::runtime_error("Cannot convert numpy data type to internal type");
+    RAISE_PYERROR << "Cannot convert numpy data type to internal type";
 }
 
 void pySetLogLevel(const std::string& level)

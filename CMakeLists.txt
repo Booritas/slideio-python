@@ -22,14 +22,13 @@ set(PYBIND11_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/pybind11/include)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
 set(CMAKE_CXX_STANDARD_REQUIRED, ON)
-set(CMAKE_CXX_STANDARD,14)
+set(CMAKE_CXX_STANDARD,17)
 set(CONAN_DISABLE_CHECK_COMPILER ON)
 
 IF(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     add_compile_definitions(_FILE_OFFSET_BITS=64)
 ELSEIF(UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
     set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 ENDIF()
@@ -54,7 +53,6 @@ include_directories(
 )
 
 find_package(slideio)
-find_package(Boost)
 
 set(BINDLIB_SOURCE 
    src/pybind.cpp
@@ -80,13 +78,9 @@ message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 include(helper.cmake)
 
 target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
-target_link_libraries(${LIBRARY_NAME} PRIVATE boost::boost)
 set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_link_options(${LIBRARY_NAME} PRIVATE "-Wl,-Bsymbolic")
-endif()
 
 FIX_MACOS_RPATH(${LIBRARY_NAME})
 

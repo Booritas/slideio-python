@@ -108,7 +108,7 @@ class CMakeBuild(build_ext):
             '-DCMAKE_TOOLCHAIN_FILE=./cmake/conan_toolchain.cmake'
         ]
 
-        cfg = 'Debug'
+        cfg = 'Release'
         build_args = ['--config', cfg, "--target", "slideiopybind"]
 
         if platform.system() == "Windows":

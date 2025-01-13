@@ -15,6 +15,7 @@ except ImportError:
 
 patterns = [
     "CMakePresets.json",
+    "CMakeUserPresets.json",
 ]
 
 

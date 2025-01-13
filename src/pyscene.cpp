@@ -3,7 +3,6 @@
 // of this distribution and at http://slideio.com/license.html.
 #include "pyscene.hpp"
 #include <pybind11/numpy.h>
-#include <boost/format.hpp>
 #include "pyslide.hpp"
 #include "pyerror.hpp"
 
@@ -94,7 +93,9 @@ py::dtype PyScene::getChannelDataType(int channel) const
         case slideio::DataType::DT_UInt16:
             return py::detail::npy_format_descriptor<uint16_t>::dtype();
         default:
-            throw std::runtime_error("Cannot convert data to numpy: Unsupported data type");
+        {
+            RAISE_PYERROR << "Cannot convert data to numpy: Unsupported data type";
+        }
     }
 }
 
@@ -146,15 +147,11 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
     {
         if(stopSlice<=startSlice)
         {
-            throw std::runtime_error(
-                (boost::format("Invalid slice range (%1%,%2%)") %startSlice %stopSlice).str()
-            );
+            RAISE_PYERROR << "Invalid slice range (" << startSlice << "," << stopSlice << ")";
         }
         if(stopFrame<=startFrame)
         {
-            throw std::runtime_error(
-                (boost::format("Invalid time frame range (%1%,%2%)") %startFrame %stopFrame).str()
-            );
+            RAISE_PYERROR << "Invalid time frame range (" << startFrame << "," << stopFrame << ")";
         }
         m_scene->readResampled4DBlockChannels(blockRect, blockSize, channelIndices, sliceRange, tframeRange, numpy_array.mutable_data(), memSize);
     }
