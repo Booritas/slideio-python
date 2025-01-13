@@ -1,6 +1,6 @@
 #!/bin/bash
 min_version=7
-max_version=12
+max_version=13
 
 build_wheel()
 {
