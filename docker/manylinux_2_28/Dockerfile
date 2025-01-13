@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2024.11.16-1 AS base
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024.11.16-1
 ENV CONAN_REVISIONS_ENABLED=1
 RUN yum update -y
 RUN yum install -y wget
@@ -8,6 +8,7 @@ RUN yum install -y libvdpau-devel
 RUN yum install -y xkeyboard-config-devel
 RUN yum install -y libnsl2-devel
 RUN yum install -y libfontenc-devel libXaw-devel libXcomposite-devel libXcursor-devel libXdmcp-devel libXtst-devel libXinerama-devel libxkbfile-devel libXrandr-devel libXres-devel libXScrnSaver-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libXdamage-devel libXxf86vm-devel libXv-devel xcb-util-devel libuuid-devel
+RUN yum install -y libxcb-devel libfontenc-devel libXaw-devel libXcomposite-devel epel-release
 RUN yum install -y perl-IPC-Cmd perl-App-cpanminus
 RUN sed -i 's|-specs=/usr/lib/rpm/redhat/redhat-annobin-cc1||g' /usr/lib64/perl5/Config_heavy.pl
 RUN cpanm Scalar::Util
@@ -17,6 +18,8 @@ RUN update-alternatives --install /usr/bin/pip3 pip3 /opt/python/cp311-cp311/bin
 #install conan
 RUN yes | pip3 install conan
 RUN update-alternatives --install /usr/bin/conan conan /opt/python/cp311-cp311/bin/conan 10
+COPY global.conf /root/.conan2/
+
 # vim settings
 COPY vimrc /root/.vimrc
 # Set aliases
@@ -43,13 +46,10 @@ WORKDIR /opt
 RUN yes | python3 -m ensurepip
 RUN yes | python3 -m pip install distro
 
-FROM base AS builder
 RUN cd /opt && git clone --recursive --depth 1 --branch v2.7.0 https://github.com/Booritas/slideio-python.git
 RUN cd /opt && git clone --depth 1 --branch v2.7.0 https://github.com/Booritas/conan-center-index.git
 ENV SLIDEIO_HOME=/opt/slideio-python
 ENV CONAN_INDEX_HOME=/opt/conan-center-index
 RUN cd /opt/slideio-python && bash ./conan.sh
 RUN cd /opt/slideio-python && python3 ./install.py -a conan
-
-FROM base AS final
-COPY --from=builder /root/.conan2/p /root/.conan2/p
+# RUN bash ./build-wheels-manylinux.sh
