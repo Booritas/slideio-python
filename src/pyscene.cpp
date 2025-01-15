@@ -141,6 +141,7 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
 
     if(startSlice==0 && stopSlice<=1 && startFrame==0 && stopFrame<=1)
     {
+        py::gil_scoped_release release;
         m_scene->readResampledBlockChannels(blockRect, blockSize, channelIndices, numpy_array.mutable_data(), memSize);
     }
     else
@@ -153,6 +154,7 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
         {
             RAISE_PYERROR << "Invalid time frame range (" << startFrame << "," << stopFrame << ")";
         }
+        py::gil_scoped_release release;
         m_scene->readResampled4DBlockChannels(blockRect, blockSize, channelIndices, sliceRange, tframeRange, numpy_array.mutable_data(), memSize);
     }
 
