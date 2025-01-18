@@ -1,73 +1,106 @@
 name: Build Macos Wheels
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      upload-conan-packages:
+        description: 'Upload conan packages'
+        required: true
+        default: 'true'
+        type: boolean
+      build-conan-packages:
+        description: 'Build conan packages'
+        required: true
+        default: 'true'
+        type: boolean
+      os:
+        description: 'Operating System'
+        required: true
+        default: 'macos-13'
+        type: choice
+        options:
+          - macos-13
+          - macos-14
+          - both
+
 env:
   CONAN_REVISIONS_ENABLED: 1
   CONAN_DISABLE_CHECK_COMPILER: 1
+  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
+  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
+  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
+  SLIDEIO_HOME: ${{ github.workspace }}/slideio
+  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
+
 jobs:
   build-mac-win:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-12, macos-14]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-
+    runs-on: ${{ github.event.inputs.os }}
     steps:
     - name: Setup cmake
       uses: jwlawson/actions-setup-cmake@v2
-          
+
     - name: display cmake version
       run: cmake --version
-  
-    - name: checkout
+
+    - name: checkout the repository
       uses: actions/checkout@v4
       with:
         submodules: 'true'
-      
+        path: slideio
+
+    - name: checkout conan repository
+      uses: actions/checkout@v4
+      with:
+        repository: Booritas/conan-center-index
+        path: conan-center-index
+
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: true
         activate-environment: ""
 
-    - name: Create and activate conda environments
+    - name: Create conan2 conda environment
       shell: bash -el {0}
       run: |
-        conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
-        conda activate py${{ matrix.python-version }}
-        python --version
-        python -m pip install conan==1.65.0
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }}
-        conan user -r digitalo -p ${{ secrets.CONAN_PASSWORD }} ${{ secrets.CONAN_USER }}
-        python -m pip install numpy
-        python -m pip install wheel
+        conda create -n conan2 python=3.12 -y
+        conda activate conan2
+        python -m pip install conan
+        conan remote add slideio ${{ secrets.CONAN_SERVER }}
+        conan remote auth slideio
+        conan --version
+        conda deactivate
 
-  
-    - name: install dependencies
+    - name: Install conan packages from conan-center-index
       shell: bash -el {0}
+      working-directory: slideio
+      if: ${{ github.event.inputs.build-conan-packages }}
       run: |
-        conda activate py${{ matrix.python-version }}
-        python install.py -a conan -c release
+        df -h /
+        conda activate conan2
+        ./conan.sh
+        if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
+          conan upload -c "*"" -r slideio
+        fi
+        df -h /
+        conda deactivate
 
-    - name: build wheels
-      working-directory: ./src
-      shell: bash -el {0}
-      run: |
-        conda activate py${{ matrix.python-version }}
-        source ../define_python_env.sh
-        python setup.py sdist bdist_wheel
+    # - name: Install dependencies
+    #   shell: bash -el {0}
+    #   working-directory: slideio
+    #   run: |
+    #     conda activate conan2
+    #     python install.py -a conan -c release
+    #     if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
+    #       conan upload -c "*"" -r slideio
+    #     fi
+    #     conda deactivate
 
-    - name: Install wheel and run tests
-      shell: bash  -el {0}
-      continue-on-error: true
-      run: |
-        conda activate py${{ matrix.python-version }}
-        wheelFile=$(find ./src/dist -name "*.whl" | head -n 1)
-        echo "Installing wheel $wheelFile"
-        python -m pip install "$wheelFile"
-        python ./tests/test.py
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: slideio- ${{ matrix.os }}-whl-${{ matrix.python-version }}
-        path: ./src/dist/*.whl
-  
+    # - name: Build wheels
+    #   shell: bash -el {0}
+    #   run: |
+    #     ./build-wheels-macos.sh
+        
+    # - uses: actions/upload-artifact@v4
+    #   with:
+    #     name: slideio- ${{ matrix.os }}-whl-${{ matrix.python-version }}
+    #     path: ./src/dist/*.whl
