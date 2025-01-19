@@ -33,7 +33,7 @@ env:
   CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
 
 jobs:
-  build-mac-win:
+  build-mac-wheels:
     runs-on: ${{ github.event.inputs.os }}
     steps:
     - name: Setup cmake
@@ -84,23 +84,23 @@ jobs:
         df -h /
         conda deactivate
 
-    # - name: Install dependencies
-    #   shell: bash -el {0}
-    #   working-directory: slideio
-    #   run: |
-    #     conda activate conan2
-    #     python install.py -a conan -c release
-    #     if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
-    #       conan upload -c "*"" -r slideio
-    #     fi
-    #     conda deactivate
+    - name: Install dependencies
+      shell: bash -el {0}
+      working-directory: slideio
+      run: |
+        conda activate conan2
+        python install.py -a conan -c release
+        if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
+          conan upload -c "*"" -r slideio
+        fi
+        conda deactivate
 
-    # - name: Build wheels
-    #   shell: bash -el {0}
-    #   run: |
-    #     ./build-wheels-macos.sh
+    - name: Build wheels
+      shell: bash -el {0}
+      run: |
+        ./build-wheels-macos.sh
         
-    # - uses: actions/upload-artifact@v4
-    #   with:
-    #     name: slideio- ${{ matrix.os }}-whl-${{ matrix.python-version }}
-    #     path: ./src/dist/*.whl
+    - uses: actions/upload-artifact@v4
+      with:
+        name: slideio-wheels
+        path: ./src/dist/*.whl
