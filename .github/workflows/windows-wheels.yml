@@ -67,20 +67,25 @@ jobs:
       if: ${{ github.event.inputs.build-conan-packages }}
       run: |
         conda activate conan2
-        ./conan.sh
+        ./conan.ps1
         conda deactivate
   
     - name: install dependencies
+      shell: pwsh
       working-directory: slideio
       run: |
-          python install.py -a conan -c release
+        conda activate conan2
+        python install.py -a conan -c release
+        conda deactivate
 
     - name: Upload conan packages
       shell: pwsh
       working-directory: slideio
       if: ${{ github.event.inputs.upload-conan-packages }}
       run: |
+        conda activate conan2
         conan upload -c "*" -r slideio    
+        conda deactivate
 
     - name: Upload conan packages
       shell: pwsh
