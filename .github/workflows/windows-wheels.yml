@@ -22,7 +22,7 @@ env:
   SLIDEIO_HOME: ${{ github.workspace }}/slideio
   CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
 jobs:
-  build-mac-win:
+  build-win:
     runs-on: windows-2019
 
     steps:
@@ -87,11 +87,11 @@ jobs:
         conan upload -c "*" -r slideio    
         conda deactivate
 
-    - name: Upload conan packages
+    - name: Build python wheels
       shell: pwsh
       working-directory: slideio
       run: |
-        ./buld-wheels-win.ps1    
+        ./build-wheels-win.ps1    
   
     - uses: actions/upload-artifact@v4
       with:
