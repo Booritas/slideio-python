@@ -40,7 +40,7 @@ jobs:
 
     - name: checkout conan repository
       uses: actions/checkout@v4
-      if: ${{ github.event.inputs.build-conan-packages }}
+      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
       with:
         repository: Booritas/conan-center-index
         path: conan-center-index
@@ -64,7 +64,7 @@ jobs:
     - name: Install conan packages from conan-center-index
       shell: pwsh
       working-directory: slideio
-      if: ${{ github.event.inputs.build-conan-packages }}
+      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
       run: |
         conda activate conan2
         ./conan.ps1
@@ -81,7 +81,7 @@ jobs:
     - name: Upload conan packages
       shell: pwsh
       working-directory: slideio
-      if: ${{ github.event.inputs.upload-conan-packages }}
+      if: ${{ github.event.inputs.upload-conan-packages == 'true' }}
       run: |
         conda activate conan2
         conan upload -c "*" -r slideio    
