@@ -1,15 +1,29 @@
 name: Build Windows Wheels
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      upload-conan-packages:
+        description: 'Upload conan packages'
+        required: true
+        default: 'true'
+        type: boolean
+      build-conan-packages:
+        description: 'Build conan packages'
+        required: true
+        default: 'true'
+        type: boolean
 env:
   CONAN_REVISIONS_ENABLED: 1
   CONAN_DISABLE_CHECK_COMPILER: 1
+  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
+  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
+  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
+  SLIDEIO_HOME: ${{ github.workspace }}/slideio
+  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
 jobs:
-  build-mac-win:
-    runs-on: windows-2019
-    strategy:
-      matrix:
-        python-version: ['3.8','3.9','3.10','3.11','3.12']
+  build-win:
+    runs-on: windows-2022
 
     steps:
     - name: Setup cmake
@@ -18,83 +32,68 @@ jobs:
     - name: display cmake version
       run: cmake --version
   
-    - name: checkout
+    - name: checkout the repository
       uses: actions/checkout@v4
       with:
         submodules: 'true'
+        path: slideio
+
+    - name: checkout conan repository
+      uses: actions/checkout@v4
+      if: ${{ github.event.inputs.build-conan-packages }}
+      with:
+        repository: Booritas/conan-center-index
+        path: conan-center-index
       
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: true
         activate-environment: ""
 
-    - name: Create and activate conda environments
+    - name: Create conan2 conda environment
+      shell: pwsh
       run: |
-        conda create -n py${{ matrix.python-version }} python=${{ matrix.python-version }} -y
-        conda activate py${{ matrix.python-version }}
-        python --version
-        python -m pip install numpy
-        python -m pip install wheel
-
-    - name: Install Conan
-      id: conan
-      uses: turtlebrowser/get-conan@main
-      with:
-        version: 1.65.0
+        conda create -n conan2 python=3.12 -y
+        conda activate conan2
+        python -m pip install conan
+        conan remote add slideio ${{ secrets.CONAN_SERVER }}
+        conan remote auth slideio
+        conan --version
+        conda deactivate
   
-    - name: Conan preparation
+    - name: Install conan packages from conan-center-index
+      shell: pwsh
+      working-directory: slideio
+      if: ${{ github.event.inputs.build-conan-packages }}
       run: |
-        echo "${{ steps.conan.outputs.version }}"
-        conan remote add digitalo ${{ secrets.CONAN_SERVER }} 
-
+        conda activate conan2
+        ./conan.ps1
+        conda deactivate
+  
     - name: install dependencies
+      shell: pwsh
+      working-directory: slideio
       run: |
+        conda activate conan2
         python install.py -a conan -c release
+        conda deactivate
 
-    - name: build wheels
-      working-directory: ./src
+    - name: Upload conan packages
       shell: pwsh
+      working-directory: slideio
+      if: ${{ github.event.inputs.upload-conan-packages }}
       run: |
-        conda activate py${{ matrix.python-version }}
-        $pythonPath = (Get-Command python).Source
-        $pythonDir = Split-Path -Parent $pythonPath
-        $pythonLibDir = Join-Path $pythonDir "libs"
-        $version = "${{ matrix.python-version }}"
+        conda activate conan2
+        conan upload -c "*" -r slideio    
+        conda deactivate
 
-        Write-Host "Python path: $pythonPath"
-        Write-Host "Python directory: $pythonDir"        
-        Write-Host "Python version: $version"        
-
-        $env:PYTHON_EXECUTABLE = $pythonPath
-        $env:Python3_EXECUTABLE = $pythonPath
-        $pythonVersion = (python --version).Split()[1]
-        $env:Python3_VERSION = $pythonVersion
-        $env:Python3_INCLUDE_DIRS = Join-Path $pythonDir "include"
-        $env:Python3_LIBRARY_DIRS = $pythonLibDir
-        $env:Python3_NumPy_INCLUDE_DIRS = python -c "import numpy; print(numpy.get_include())"
-        $env:Python3_LIBRARIES = Join-Path $pythonLibDir "python$($version.Replace('.', '')).lib"
-        $env:PYTHON_LOCATION_IS_SET = 1
-
-        
-        # Build distributable
-        Write-Host "Executing command in conda environment for Python $version"
-        python --version
-        Write-Host "Installing wheel in conda environment for Python $version"
-    
-        python setup.py sdist bdist_wheel
-        Get-ChildItem -Path .\dist  
-
-    - name: Install wheel and run tests
+    - name: Build python wheels
       shell: pwsh
+      working-directory: slideio
       run: |
-        conda activate py${{ matrix.python-version }}
-        $wheelFile = Get-ChildItem -Path "./src/dist" -Filter "*.whl" | Select-Object -First 1 -ExpandProperty FullName
-        Write-Host "Installing wheel $wheelFile"
-        python -m pip install $wheelFile
-        python ./tests/test.py
-
+        ./build-wheels-win.ps1    
+  
     - uses: actions/upload-artifact@v4
       with:
-        name: slideio-windows-whl-${{ matrix.python-version }}
-        path: ./src/dist/*.whl
+        path: ./slideio/dist/*.whl
   

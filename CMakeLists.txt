@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
@@ -7,30 +7,29 @@ set(projectVersion 2.7.0)
 set(LIBRARY_NAME slideiopybind)
 
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
-set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30")
-    cmake_policy(SET CMP0167 NEW)
-endif()
 
 project(${PROJECT_NAME} VERSION ${projectVersion} LANGUAGES C CXX)
 set(CMAKE_VERBOSE_MAKEFILE off)
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(PYBIND11_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/pybind11/include)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
 set(CMAKE_CXX_STANDARD_REQUIRED, ON)
 set(CMAKE_CXX_STANDARD,17)
 set(CONAN_DISABLE_CHECK_COMPILER ON)
 
+
 IF(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     add_compile_definitions(_FILE_OFFSET_BITS=64)
 ELSEIF(UNIX)
+    set(CMAKE_BUILD_RPATH_USE_ORIGIN 1)
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 ENDIF()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -38,12 +37,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-switch-default)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
-        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-    endif()
-endif()
 
 add_subdirectory(pybind11)
 
@@ -78,11 +71,13 @@ message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 include(helper.cmake)
 
 target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
-set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
-set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
-
-
-FIX_MACOS_RPATH(${LIBRARY_NAME})
+IF (APPLE)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
+    set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "@loader_path")
+ELSEIF (UNIX)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+    set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
+ENDIF()
 
 file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
 file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)

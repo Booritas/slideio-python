@@ -1,32 +1,88 @@
 name: Linux Wheels
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      upload-conan-packages:
+        description: 'Upload conan packages'
+        required: true
+        default: 'true'
+        type: boolean
+      build-conan-packages:
+        description: 'Build conan packages'
+        required: true
+        default: 'true'
+        type: boolean
+env:
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_DISABLE_CHECK_COMPILER: 1
+  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
+  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
+  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
+  SLIDEIO_HOME: ${{ github.workspace }}/slideio
+  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
+
 jobs:
   build-linux:
     runs-on: ubuntu-20.04
     container:
-      image: booritas/slideio-py:v2.7.0
-      env:
-        CONAN_REVISIONS_ENABLED: 1
+      image: booritas/slideio-manylinux_2_28_x86_64:2.7.0
 
     steps:
-    - name: checkout
+    - name: checkout the repository
       uses: actions/checkout@v4
       with:
         submodules: 'true'
+        path: slideio
 
+    - name: checkout conan repository
+      uses: actions/checkout@v4
+      if: ${{ github.event.inputs.build-conan-packages }}
+      with:
+        repository: Booritas/conan-center-index
+        path: conan-center-index
+
+    - name: add conan repository
+      shell: bash -el {0}
+      working-directory: slideio
+      run: |
+        conan remote add slideio ${{ secrets.CONAN_SERVER }}
+        conan remote auth slideio
+
+    - name: check conan configuration
+      shell: bash -el {0}
+      working-directory: slideio
+      run: |
+        conan config show tools.*
+
+    - name: Install conan packages from conan-center-index
+      shell: bash -el {0}
+      working-directory: slideio
+      if: ${{ github.event.inputs.build-conan-packages }}
+      run: |
+        ./conan.sh
+            
     - name: install dependencies
       shell: bash  -el {0}
+      working-directory: slideio
       run: |
         python3 install.py -a conan -c release
 
+    - name: Upload conan packages
+      shell: bash -el {0}
+      working-directory: slideio
+      if: ${{ github.event.inputs.upload-conan-packages }}
+      run: |
+        conan upload -c "*" -r slideio
+  
     - name: build wheels
       shell: bash  -el {0}
+      working-directory: slideio
       run: |
         ./build-wheels-manylinux.sh
   
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels
-        path: ./wheelhouse
+          name: wheels
+          path: ./slideio/wheelhouse
   
