@@ -73,7 +73,7 @@ jobs:
     - name: Install conan packages from conan-center-index
       shell: bash -el {0}
       working-directory: slideio
-      if: ${{ github.event.inputs.build-conan-packages }}
+      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
       run: |
         df -h /
         conda activate conan2
