@@ -21,7 +21,6 @@ on:
         options:
           - macos-13
           - macos-14
-          - both
 
 env:
   CONAN_REVISIONS_ENABLED: 1
@@ -96,11 +95,13 @@ jobs:
         conda deactivate
 
     - name: Build wheels
+      working-directory: slideio
       shell: bash -el {0}
       run: |
         ./build-wheels-macos.sh
+        ./rename-macos-wheels.sh ./dist
         
     - uses: actions/upload-artifact@v4
       with:
-        name: slideio-wheels
-        path: ./src/dist/*.whl
+        path: ./slideio/dist/*.whl
+  
