@@ -67,6 +67,7 @@ invoke_conan_create() {
     # Execute the conan create command
     conan_command="conan create -pr:h $profile -pr:b $profile -b missing --version $version --user slideio --channel stable ."
     eval "$conan_command"
+    conan upload -c "*" -r slideio
 }
 
 # Save the original directory

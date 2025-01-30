@@ -78,7 +78,7 @@ jobs:
         conda activate conan2
         ./conan.sh
         if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
-          conan upload -c "*"" -r slideio
+          conan upload -c "*" -r slideio
         fi
         df -h /
         conda deactivate
