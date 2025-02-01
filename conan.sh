@@ -67,7 +67,6 @@ invoke_conan_create() {
     # Execute the conan create command
     conan_command="conan create -pr:h $profile -pr:b $profile -b missing --version $version --user slideio --channel stable ."
     eval "$conan_command"
-    conan upload -c "*" -r slideio
 }
 
 # Save the original directory
@@ -80,7 +79,7 @@ create_conan_recipes() {
     invoke_conan_create "recipes/ndpi-libjpeg-turbo/all" "2.1.2"
     invoke_conan_create "recipes/ndpi-libtiff/all" "4.3.0"
     invoke_conan_create "recipes/pole/all" "1.0.4"
-    # invoke_conan_create "recipes/slideio/all" "2.7.0"
+    invoke_conan_create "recipes/slideio/all" "2.7.0"
 }
 
 # Call the function
