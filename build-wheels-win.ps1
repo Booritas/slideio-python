@@ -3,7 +3,7 @@ $minversion = 7
 
 . .\lib.ps1
 
-$python_versions = Generate-PythonVersions -min_version $minversion -max_version 12
+$python_versions = Generate-PythonVersions -min_version $minversion -max_version 13
 Remove-Item -Path .\dist -Recurse -Force -ErrorAction SilentlyContinue
 
 Build-Wheels -python_versions $python_versions
