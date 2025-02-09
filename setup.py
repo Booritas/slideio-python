@@ -188,6 +188,7 @@ setup(
     author_email='stanislav.melnikov@gmail.com',
     description='Reading of medical images',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     ext_modules=[CMakeExtension(name = 'slideio', source_dir=source_dir, build_dir=build_dir)],
     cmdclass=dict(build_ext=CMakeBuild),
     packages=find_packages(),
