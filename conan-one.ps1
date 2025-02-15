@@ -27,11 +27,6 @@ function Invoke-ConanCreate {
 }
 
 try {
-    Invoke-ConanCreate -FolderPath "recipes\opencv\4.x" -Version "4.10.0"
-    Invoke-ConanCreate -FolderPath "recipes\jpegxrcodec\all" -Version "1.0.3"
-    Invoke-ConanCreate -FolderPath "recipes\ndpi-libjpeg-turbo\all" -Version "2.1.2"
-    Invoke-ConanCreate -FolderPath "recipes\ndpi-libtiff\all" -Version "4.3.0"
-    Invoke-ConanCreate -FolderPath "recipes\pole\all" -Version "1.0.4"
     Invoke-ConanCreate -FolderPath "recipes\slideio\all" -Version "2.7.1"
 }
 catch {

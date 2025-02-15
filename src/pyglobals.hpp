@@ -7,3 +7,4 @@
 std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string& driver);
 std::vector<std::string> pyGetDriverIDs();
 void pySetLogLevel(const std::string& level);
+std::string pyGetVersion();

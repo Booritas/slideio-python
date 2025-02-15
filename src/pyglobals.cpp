@@ -24,6 +24,12 @@ std::vector<std::string> pyGetDriverIDs()
 {
     return slideio::getDriverIDs();
 }
+
+std::string pyGetVersion()
+{
+    return slideio::getVersion();
+}
+
 static slideio::DataType typeFromNumpyType(const pybind11::dtype& type)
 {
     if (type.is(py::detail::npy_format_descriptor<uint8_t>::dtype()))

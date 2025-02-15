@@ -28,6 +28,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         "Sets log level for the library.");
     m.def("get_driver_ids", &pyGetDriverIDs,
         "Returns list of driver ids");
+    m.def("get_version", &pyGetVersion,
+            "Returns library version");
     m.def("convert_scene", &pyConvertFile,
         py::arg("scene"),
         py::arg("parameters"),
