@@ -18,4 +18,11 @@ for file in "$DIRECTORY"/*.whl; do
     mv "$file" "$new_file"
     echo "Renamed $file to $new_file"
   fi
+  if [[ "$file" == *macosx_13_0_x86_64.whl ]]; then
+    # Create the new file name with the suffix macosx_11_0_arm64
+    new_file="${file//macosx_13_0_x86_64/macosx_10_15_x86_64}"
+    # Rename the file
+    mv "$file" "$new_file"
+    echo "Renamed $file to $new_file"
+  fi
 done
