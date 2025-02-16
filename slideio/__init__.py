@@ -23,6 +23,7 @@ from .wrappers import (
     set_log_level,
     convert_scene,
     transform_scene,
+    get_version,
 )
 
 
@@ -35,4 +36,5 @@ __all__ = [
     "set_log_level",
     "convert_scene",
     "transform_scene",
+    "get_version",
 ]
