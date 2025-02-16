@@ -67,7 +67,7 @@ jobs:
       if: ${{ github.event.inputs.build-conan-packages == 'true' }}
       run: |
         conda activate conan2
-        ./conan.ps1
+        ./conan-one.ps1
         conda deactivate
   
     - name: install dependencies

@@ -60,7 +60,7 @@ jobs:
       working-directory: slideio
       if: ${{ github.event.inputs.build-conan-packages == 'true' }}
       run: |
-        ./conan.sh
+        ./conan-one.sh
             
     - name: install dependencies
       shell: bash  -el {0}
