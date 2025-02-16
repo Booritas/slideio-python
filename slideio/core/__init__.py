@@ -23,6 +23,7 @@ from .libs.slideiopybind import (
     convert_scene as core_convert_scene,
     transform_scene as core_transform_scene,
     convert_scene_ex as core_convert_scene_ex,
+    get_version as core_get_version,
 )
 
 __all__ = [
