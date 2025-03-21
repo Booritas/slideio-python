@@ -50,11 +50,10 @@ ENV SLIDEIO_HOME=/opt/slideio-python
 ENV CONAN_INDEX_HOME=/opt/conan-center-index
 
 # Uncomment to build SlideIO python packages
-# RUN cd /opt && git clone --recursive --depth 1 --branch v2.7.1 https://github.com/Booritas/slideio
-# RUN cd /opt && git clone --depth 1 --branch v2.7.1 https://github.com/Booritas/conan-center-index.git
-# ENV SLIDEIO_HOME=/opt/slideio
-# ENV CONAN_INDEX_HOME=/opt/conan-center-index
-# RUN cd /opt/slideio-python
-# RUN cd bash ./conan.sh
-# RUN cd python3 ./install.py -a conan -c release
-# RUN cd build-wheels-manylinux.sh
+#RUN cd /opt && git clone --recursive --depth 1 --branch v2.7.1 https://github.com/Booritas/slideio-python
+#RUN cd /opt && git clone --depth 1 --branch v2.7.1 https://github.com/Booritas/conan-center-index.git
+#ENV SLIDEIO_HOME=/opt/slideio-python
+#ENV CONAN_INDEX_HOME=/opt/conan-center-index
+#RUN cd /opt/slideio-python && bash ./conan.sh
+#RUN cd /opt/slideoi-python && python3 ./install.py -a conan -c release
+#RUN cd /opt/slideio-python && bash ./build-wheels-manylinux.sh

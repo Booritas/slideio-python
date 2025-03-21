@@ -62,7 +62,7 @@ Below are instructions for building the Python wheels within a manylinux environ
    Map the parent directory containing these repositories into the container:
    ```bash
    docker run --name slideio -it \
-     -v /path-to-slideio-python-parent-directory:/slideio \
+     -v /path-to-slideio-python-parent-directory:/slideio-python/ \
      booritas/slideio-manylinux_2_28_x86_64:2.7.0 bash
    ```
 
