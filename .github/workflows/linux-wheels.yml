@@ -26,7 +26,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-20.04
     container:
-      image: booritas/slideio-manylinux_2_28_x86_64:2.7.0
+      image: booritas/slideio-manylinux_2_28_x86_64:2.7.1
 
     steps:
     - name: checkout the repository
