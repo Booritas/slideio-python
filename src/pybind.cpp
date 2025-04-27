@@ -100,6 +100,7 @@ PYBIND11_MODULE(slideiopybind, m) {
         .value("XML", slideio::MetadataFormat::XML)
         .value("JSON", slideio::MetadataFormat::JSON)
         .value("TEXT", slideio::MetadataFormat::Text)
+        .export_values();
     py::enum_<slideio::Compression>(m, "Compression")
         .value("Unknown", slideio::Compression::Unknown)
         .value("Uncompressed", slideio::Compression::Uncompressed)
@@ -137,7 +138,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_readwrite("height", &slideio::Rect::height);
     py::enum_<slideio::ImageFormat>(m, "ImageFormat")
         .value("Unknown", slideio::ImageFormat::Unknown)
-        .value("SVS", slideio::ImageFormat::SVS);
+        .value("SVS", slideio::ImageFormat::SVS)
+        .export_values();
     py::class_<slideio::ConverterParameters>(m, "ConverterParameters")
         .def_property_readonly("format", &slideio::ConverterParameters::getFormat, "Format of output file")
         .def_property("rect", &slideio::ConverterParameters::getRect, &slideio::ConverterParameters::setRect, "Scene region")
@@ -168,7 +170,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         .value("XYZ", slideio::ColorSpace::XYZ)
         .value("Lab", slideio::ColorSpace::LAB)
         .value("Luv", slideio::ColorSpace::LUV)
-        .value("YUV", slideio::ColorSpace::YUV);
+        .value("YUV", slideio::ColorSpace::YUV)
+        .export_values();
     py::enum_<slideio::DataType>(m, "DataType")
         .value("Byte", slideio::DataType::DT_Byte)
         .value("Int8", slideio::DataType::DT_Int8)
@@ -179,7 +182,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         .value("Float64", slideio::DataType::DT_Float64)
         .value("UInt16", slideio::DataType::DT_UInt16)
         .value("Unknown", slideio::DataType::DT_Unknown)
-        .value("None", slideio::DataType::DT_None);
+        .value("None", slideio::DataType::DT_None)
+        .export_values();
     py::class_<slideio::GaussianBlurFilterWrap, slideio::TransformationWrapper>(m, "GaussianBlurFilter")
         .def(py::init<>())
         .def_property_readonly("type", &slideio::GaussianBlurFilterWrap::getType, "Type of transformation")
