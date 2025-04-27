@@ -39,6 +39,7 @@ public:
     int getNumAuxImages() const;
     std::shared_ptr<PyScene> getAuxImage(const std::string& imageName);
     std::string getRawMetadata() const;
+    slideio::MetadataFormat getMetadataFormat() const;
     std::string toString() const;
     int getNumZoomLevels() const;
     const slideio::LevelInfo& getZoomLevelInfo(int zoomLevel) const;

@@ -18,9 +18,21 @@ std::shared_ptr<PyScene> PySlide::getScene(int index)
     return wrapper;
 }
 
+std::shared_ptr<PyScene> PySlide::getSceneByName(const std::string& sceneName)
+{
+    std::shared_ptr<slideio::Scene> scene = m_slide->getSceneByName(sceneName);
+    std::shared_ptr<PyScene> wrapper(new PyScene(scene, m_slide));
+    return wrapper;
+}
+
 const std::string& PySlide::getRawMetadata() const
 {
     return m_slide->getRawMetadata();
+}
+
+slideio::MetadataFormat PySlide::getMetadataFormat() const
+{
+    return m_slide->getMetadataFormat();
 }
 
 std::list<std::string> PySlide::getAuxImageNames() const

@@ -227,6 +227,11 @@ std::string PyScene::getRawMetadata() const
     return m_scene->getRawMetadata();
 }
 
+slideio::MetadataFormat PyScene::getMetadataFormat() const
+{
+    return m_scene->getMetadataFormat();
+}
+
 std::string PyScene::toString() const {
     return m_scene->toString();
 }

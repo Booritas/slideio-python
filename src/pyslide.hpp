@@ -20,7 +20,9 @@ public:
     int getNumScenes() const;
     std::string getFilePath() const;
     std::shared_ptr<PyScene> getScene(int index);
+    std::shared_ptr<PyScene> getSceneByName(const std::string& sceneName);
     const std::string& getRawMetadata() const;
+    slideio::MetadataFormat getMetadataFormat() const;
     std::list<std::string> getAuxImageNames() const;
     int getNumAuxImages() const;
     std::shared_ptr<PyScene> getAuxImage(const std::string& imageName);

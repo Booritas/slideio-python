@@ -1,2 +1,2 @@
 [requires]
-slideio/2.7.1@slideio/stable
+slideio/2.8.0@slideio/stable
