@@ -207,7 +207,7 @@ class Slide(object):
         self.slide = core_open_slide(path, driver)
 
     def __repr__(self):
-        return f"File path: {self.slide.file_path}\nScenes: {self.slide.num_scenes}\nAux images: {self.slide.num_aux_images}"
+        return self.slide.__repr__()
 
     def __del__(self):
         if hasattr(self, 'slide'):
@@ -224,6 +224,11 @@ class Slide(object):
     def get_scene(self, index):
         '''Return slide scene by index'''
         scene = Scene(self.slide.get_scene(index))
+        return scene
+    
+    def get_scene_by_name(self, name):
+        '''Return slide scene by name'''
+        scene = Scene(self.slide.get_scene_by_name(name))
         return scene
     
     @property

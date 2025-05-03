@@ -26,6 +26,7 @@ public:
     std::list<std::string> getAuxImageNames() const;
     int getNumAuxImages() const;
     std::shared_ptr<PyScene> getAuxImage(const std::string& imageName);
+    std::string toString() const;
 private:
     std::shared_ptr<slideio::Slide> m_slide;
 };

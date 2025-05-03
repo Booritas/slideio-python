@@ -52,3 +52,7 @@ std::shared_ptr<PyScene> PySlide::getAuxImage(const std::string& imageName)
     return wrapper;
 }
 
+std::string PySlide::toString() const {
+    return m_slide->toString();
+}
+

@@ -51,7 +51,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_property_readonly("num_aux_images", &PySlide::getNumAuxImages, "Number of auxiliary images")
         .def_property_readonly("raw_metadata", &PySlide::getRawMetadata, "Slide raw metadata")
         .def_property_readonly("metadata_format", &PySlide::getMetadataFormat, "Metadata format")
-        .def_property_readonly("file_path", &PySlide::getFilePath, "File path to the image");
+        .def_property_readonly("file_path", &PySlide::getFilePath, "File path to the image")
+        .def("__repr__", &PySlide::toString);
     py::class_<PyScene, std::shared_ptr<PyScene>>(m, "Scene")
         .def_property_readonly("name", &PyScene::getName, "Scene name")
         .def_property_readonly("resolution", &PyScene::getResolution, "Scene resolution in x and y directions")
