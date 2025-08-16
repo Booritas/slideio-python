@@ -3,7 +3,7 @@ cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
 set(PROJECT_NAME slideio-python)
-set(projectVersion 2.7.0)
+set(projectVersion 2.7.2)
 set(LIBRARY_NAME slideiopybind)
 
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)

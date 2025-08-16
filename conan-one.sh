@@ -73,7 +73,7 @@ invoke_conan_create() {
 original_dir=$(pwd)
 
 create_conan_recipes() {
-    invoke_conan_create "recipes/slideio/all" "2.7.1"
+    invoke_conan_create "recipes/slideio/all" "2.7.2"
 }
 
 # Call the function
