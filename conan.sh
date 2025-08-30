@@ -80,7 +80,7 @@ create_conan_recipes() {
     invoke_conan_create "recipes/ndpi-libjpeg-turbo/all" "2.1.2"
     invoke_conan_create "recipes/ndpi-libtiff/all" "4.3.0"
     invoke_conan_create "recipes/pole/all" "1.0.4"
-    invoke_conan_create "recipes/slideio/all" "2.7.2"
+    invoke_conan_create "recipes/slideio/all" "2.7.3"
 }
 
 # Call the function

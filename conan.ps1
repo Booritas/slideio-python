@@ -34,7 +34,7 @@ try {
     Invoke-ConanCreate -FolderPath "recipes\ndpi-libjpeg-turbo\all" -Version "2.1.2"
     Invoke-ConanCreate -FolderPath "recipes\ndpi-libtiff\all" -Version "4.3.0"
     Invoke-ConanCreate -FolderPath "recipes\pole\all" -Version "1.0.4"
-    Invoke-ConanCreate -FolderPath "recipes\slideio\all" -Version "2.7.2"
+    Invoke-ConanCreate -FolderPath "recipes\slideio\all" -Version "2.7.3"
 }
 catch {
     Write-Error "An error occurred: $_"
