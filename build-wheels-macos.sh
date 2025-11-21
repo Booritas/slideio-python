@@ -5,7 +5,7 @@ set -e
 os=$(uname -s)
 platform=$(uname -m)
 minversion=7
-maxversion=14
+maxversion=13
 if [[ "$os" == "Darwin" && "$platform" == "arm64" ]]; then
   # Set an environment variable if OS is macOS and platform is ARM
   minversion=8

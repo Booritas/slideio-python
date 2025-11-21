@@ -462,3 +462,4 @@ slideio.egg-info/
 CMakeUserPresets.json
 wheelhouse/
 cmake/
+.vscode/
