@@ -43,8 +43,8 @@ RUN echo "alias lsa='ls -lah'" >> /root/.bashrc && \
     echo "alias la='ls -lAh'" >> /root/.bashrc
 
 # Clone repositories with shallow depth
-RUN git clone --recursive --depth 1 --branch v2.7.0 https://github.com/Booritas/slideio-python.git /opt/slideio-python && \
-    git clone --depth 1 --branch v2.7.0 https://github.com/Booritas/conan-center-index.git /opt/conan-center-index
+RUN git clone --recursive --depth 1 --branch v2.7.4 https://github.com/Booritas/slideio-python.git /opt/slideio-python && \
+    git clone --depth 1 --branch v2.7.4 https://github.com/Booritas/conan-center-index.git /opt/conan-center-index
 
 ENV SLIDEIO_HOME=/opt/slideio-python
 ENV CONAN_INDEX_HOME=/opt/conan-center-index

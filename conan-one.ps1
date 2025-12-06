@@ -27,7 +27,7 @@ function Invoke-ConanCreate {
 }
 
 try {
-    Invoke-ConanCreate -FolderPath "recipes\slideio\all" -Version "2.7.1"
+    Invoke-ConanCreate -FolderPath "recipes\slideio\all" -Version "2.7.4"
 }
 catch {
     Write-Error "An error occurred: $_"
