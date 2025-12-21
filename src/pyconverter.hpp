@@ -7,10 +7,13 @@
 
 namespace slideio
 {
-    class ConverterParameters;
+    namespace converter {
+         class ConverterParameters;
+    }
 }
 
 class PyScene;
 
-void pyConvertFile(std::shared_ptr<PyScene>& pyScene, slideio::ConverterParameters*  params, const std::string& filePath);
-void pyConvertFileEx(std::shared_ptr<PyScene>& pyScene, slideio::ConverterParameters* params, const std::string& filePath, pybind11::function callback);
+
+void pyConvertFile(std::shared_ptr<PyScene>& pyScene, slideio::converter::ConverterParameters*  params, const std::string& filePath);
+void pyConvertFileEx(std::shared_ptr<PyScene>& pyScene, slideio::converter::ConverterParameters* params, const std::string& filePath, pybind11::function callback);

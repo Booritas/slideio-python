@@ -137,26 +137,42 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_readwrite("y", &slideio::Rect::y)
         .def_readwrite("width", &slideio::Rect::width)
         .def_readwrite("height", &slideio::Rect::height);
-    py::enum_<slideio::ImageFormat>(m, "ImageFormat")
-        .value("Unknown", slideio::ImageFormat::Unknown)
-        .value("SVS", slideio::ImageFormat::SVS)
+    py::class_<slideio::Range>(m, "Range")
+        .def_readwrite("start", &slideio::Range::start)
+        .def_readwrite("end", &slideio::Range::end)
+        .def_property_readonly("size", &slideio::Range::size);
+    py::enum_<slideio::converter::ImageFormat>(m, "ImageFormat")
+        .value("Unknown", slideio::converter::ImageFormat::Unknown)
+        .value("SVS", slideio::converter::ImageFormat::SVS)
+        .value("OMETIFF", slideio::converter::ImageFormat::OME_TIFF)
         .export_values();
-    py::class_<slideio::ConverterParameters>(m, "ConverterParameters")
-        .def_property_readonly("format", &slideio::ConverterParameters::getFormat, "Format of output file")
-        .def_property("rect", &slideio::ConverterParameters::getRect, &slideio::ConverterParameters::setRect, "Scene region")
-        .def_property("z_slice", &slideio::ConverterParameters::getZSlice, &slideio::ConverterParameters::setZSlice, "Z slice")
-        .def_property("t_frame", &slideio::ConverterParameters::getTFrame, &slideio::ConverterParameters::setTFrame, "Time frame");
-    py::class_<slideio::SVSConverterParameters, slideio::ConverterParameters>(m, "SVSParameters")
-        .def_property("tile_width", &slideio::SVSConverterParameters::getTileWidth, &slideio::SVSConverterParameters::setTileWidth, "Width of tiles in pixels")
-        .def_property("tile_height", &slideio::SVSConverterParameters::getTileHeight, &slideio::SVSConverterParameters::setTileHeight, "Height of tiles in pixels")
-        .def_property("num_zoom_levels", &slideio::SVSConverterParameters::getNumZoomLevels, &slideio::SVSConverterParameters::setNumZoomLevels, "Number of zoom levels")
-        .def_property_readonly("encoding", &slideio::SVSConverterParameters::getEncoding, "Tile encoding parameters");
-    py::class_<slideio::SVSJpegConverterParameters, slideio::SVSConverterParameters, slideio::ConverterParameters>(m, "SVSJpegParameters")
+    py::class_<slideio::converter::ConverterParameters>(m, "ConverterParameters")
+        .def_property_readonly("format", &slideio::converter::ConverterParameters::getFormat, "Format of output file")
+        .def_property("rect", &slideio::converter::ConverterParameters::getRect, &slideio::converter::ConverterParameters::setRect, "Scene region")
+        .def_property("z_slice_range", &slideio::converter::ConverterParameters::getSliceRange, &slideio::converter::ConverterParameters::setSliceRange, "Z slice range")
+        .def_property("t_frame_range", &slideio::converter::ConverterParameters::getTFrameRange, &slideio::converter::ConverterParameters::setTFrameRange, "Time frame range");
+    py::class_<slideio::converter::SVSConverterParameters, slideio::converter::ConverterParameters>(m, "SVSParameters")
+        .def_property("tile_width", &slideio::converter::SVSConverterParameters::getTileWidth, &slideio::converter::SVSConverterParameters::setTileWidth, "Width of tiles in pixels")
+        .def_property("tile_height", &slideio::converter::SVSConverterParameters::getTileHeight, &slideio::converter::SVSConverterParameters::setTileHeight, "Height of tiles in pixels")
+        .def_property("num_zoom_levels", &slideio::converter::SVSConverterParameters::getNumZoomLevels, &slideio::converter::SVSConverterParameters::setNumZoomLevels, "Number of zoom levels")
+        .def_property_readonly("encoding", &slideio::converter::SVSConverterParameters::getEncoding, "Tile encoding parameters");
+    py::class_<slideio::converter::SVSJpegConverterParameters, slideio::converter::SVSConverterParameters, slideio::converter::ConverterParameters>(m, "SVSJpegParameters")
         .def(py::init<>())
-        .def_property("quality", &slideio::SVSJpegConverterParameters::getQuality, &slideio::SVSJpegConverterParameters::setQuality, "Quality of JPEG encoding");
-    py::class_<slideio::SVSJp2KConverterParameters, slideio::SVSConverterParameters, slideio::ConverterParameters>(m, "SVSJp2KParameters")
+        .def_property("quality", &slideio::converter::SVSJpegConverterParameters::getQuality, &slideio::converter::SVSJpegConverterParameters::setQuality, "Quality of JPEG encoding");
+    py::class_<slideio::converter::SVSJp2KConverterParameters, slideio::converter::SVSConverterParameters, slideio::converter::ConverterParameters>(m, "SVSJp2KParameters")
         .def(py::init<>())
-        .def_property("compression_rate", &slideio::SVSJp2KConverterParameters::getCompressionRate, &slideio::SVSJp2KConverterParameters::setCompressionRate, "Compression rate of JPEG200 encoding");
+        .def_property("compression_rate", &slideio::converter::SVSJp2KConverterParameters::getCompressionRate, &slideio::converter::SVSJp2KConverterParameters::setCompressionRate, "Compression rate of JPEG200 encoding");
+    py::class_<slideio::converter::OMETIFFConverterParameters, slideio::converter::ConverterParameters>(m, "OMETIFFParameters")
+        .def_property("tile_width", &slideio::converter::OMETIFFConverterParameters::getTileWidth, &slideio::converter::OMETIFFConverterParameters::setTileWidth, "Width of tiles in pixels")
+        .def_property("tile_height", &slideio::converter::OMETIFFConverterParameters::getTileHeight, &slideio::converter::OMETIFFConverterParameters::setTileHeight, "Height of tiles in pixels")
+        .def_property("num_zoom_levels", &slideio::converter::OMETIFFConverterParameters::getNumZoomLevels, &slideio::converter::OMETIFFConverterParameters::setNumZoomLevels, "Number of zoom levels")
+        .def_property_readonly("encoding", &slideio::converter::OMETIFFConverterParameters::getEncoding, "Tile encoding parameters");
+    py::class_<slideio::converter::OMETIFFJpegConverterParameters, slideio::converter::OMETIFFConverterParameters, slideio::converter::ConverterParameters>(m, "OMETIFFJpegParameters")
+        .def(py::init<>())
+        .def_property("quality", &slideio::converter::OMETIFFJpegConverterParameters::getQuality, &slideio::converter::OMETIFFJpegConverterParameters::setQuality, "Quality of JPEG encoding");
+    py::class_<slideio::converter::OMETIFFJp2KConverterParameters, slideio::converter::OMETIFFConverterParameters, slideio::converter::ConverterParameters>(m, "OMETIFFJp2KParameters")
+        .def(py::init<>())
+        .def_property("compression_rate", &slideio::converter::OMETIFFJp2KConverterParameters::getCompressionRate, &slideio::converter::OMETIFFJp2KConverterParameters::setCompressionRate, "Compression rate of JPEG200 encoding");
     py::class_<slideio::TransformationWrapper>(m, "Transformation")
         .def_property_readonly("type", &slideio::TransformationWrapper::getType, "Type of transformation");
     py::class_<slideio::ColorTransformationWrap, slideio::TransformationWrapper>(m, "ColorTransformation")

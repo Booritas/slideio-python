@@ -124,7 +124,7 @@ function Build-Wheels {
         Activate-CondaEnv -version $version
         python -m pip install numpy
 
-        $pythonPath = (Get-Command python).Source
+        $pythonPath = (Get-Command python).Source 
         $pythonDir = Split-Path -Parent $pythonPath
         $pythonLibDir = Join-Path $pythonDir "libs"
 
