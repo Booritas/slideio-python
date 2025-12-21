@@ -2,6 +2,8 @@ from .core import (
     Compression,
     SVSJpegParameters,
     SVSJp2KParameters,
+    OMETIFFJpegParameters,
+    OMETIFFJp2KParameters,
     ColorTransformation,
     ColorSpace,
     GaussianBlurFilter,
