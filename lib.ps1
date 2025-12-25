@@ -146,6 +146,7 @@ function Build-Wheels {
         Write-Host "Executing command in conda environment for Python $version"
         python --version
         Write-Host "Installing wheel in conda environment for Python $version"
+        python -m pip install setuptools
         python -m pip install wheel
         python -m pip install conan
     
