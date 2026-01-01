@@ -11,16 +11,16 @@ on:
       build-conan-packages:
         description: 'Build conan packages'
         required: true
-        default: 'true'
+        default: 'false'
         type: boolean
       os:
         description: 'Operating System'
         required: true
-        default: 'macos-13'
+        default: 'macos-14'
         type: choice
         options:
-          - macos-13
           - macos-14
+          - macos-15-intel
 
 env:
   CONAN_REVISIONS_ENABLED: 1
