@@ -6,12 +6,12 @@ on:
       upload-conan-packages:
         description: 'Upload conan packages'
         required: true
-        default: 'true'
+        default: true
         type: boolean
       build-conan-packages:
         description: 'Build conan packages'
         required: true
-        default: 'true'
+        default: false
         type: boolean
 env:
   CONAN_REVISIONS_ENABLED: 1
