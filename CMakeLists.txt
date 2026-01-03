@@ -46,6 +46,7 @@ include_directories(
 )
 
 find_package(slideio)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
 set(BINDLIB_SOURCE 
    src/pybind.cpp
@@ -71,6 +72,7 @@ message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 include(helper.cmake)
 
 target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
+
 IF (APPLE)
     set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
     set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "@loader_path")
