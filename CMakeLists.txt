@@ -3,7 +3,7 @@ cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
 set(PROJECT_NAME slideio-python)
-set(projectVersion 2.7.4)
+set(projectVersion 2.8.0)
 set(LIBRARY_NAME slideiopybind)
 
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
@@ -37,17 +37,19 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-switch-default)
 endif()
 
-set(PYBIND11_FINDPYTHON ON)
+set(PYBIND11_FINDPYTHON OFF)
 
 add_subdirectory(pybind11)
+
+#find_package(pybind11 CONFIG)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(slideio)
 
 include_directories(
     ${INCLUDE_ROOT} 
     ${PYBIND11_INCLUDE_DIR}
 )
 
-find_package(slideio)
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
 set(BINDLIB_SOURCE 
    src/pybind.cpp
