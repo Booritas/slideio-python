@@ -37,6 +37,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-switch-default)
 endif()
 
+set(PYBIND11_FINDPYTHON ON)
 
 add_subdirectory(pybind11)
 
