@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2024.11.16-1
+FROM quay.io/pypa/manylinux_2_28_x86_64:2026.01.03-1
 
 ENV CONAN_REVISIONS_ENABLED=1
 WORKDIR /opt
