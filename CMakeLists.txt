@@ -6,6 +6,11 @@ set(PROJECT_NAME slideio-python)
 set(projectVersion 2.8.0)
 set(LIBRARY_NAME slideiopybind)
 
+if(DEFINED ENV{SLIDEIO_INSTALL_DIR})
+    message(STATUS "Using SLIDEIO_INSTALL_DIR: $ENV{SLIDEIO_INSTALL_DIR}")
+    set(SLIDEIO_INSTALL_DIR $ENV{SLIDEIO_INSTALL_DIR})
+endif()
+
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
@@ -41,9 +46,14 @@ set(PYBIND11_FINDPYTHON OFF)
 
 add_subdirectory(pybind11)
 
-#find_package(pybind11 CONFIG)
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(slideio)
+
+if(DEFINED SLIDEIO_INSTALL_DIR)
+    include_directories(${SLIDEIO_INSTALL_DIR}/include)
+    link_directories(${SLIDEIO_INSTALL_DIR}/lib)
+else()
+    find_package(slideio)
+endif()
 
 include_directories(
     ${INCLUDE_ROOT} 
@@ -74,7 +84,16 @@ message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 
 include(helper.cmake)
 
-target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
+if(DEFINED SLIDEIO_INSTALL_DIR)
+    target_link_libraries(${LIBRARY_NAME} PRIVATE 
+        slideio
+        slideio-converter
+        slideio-transformer
+        slideio-core
+    )
+else()
+    target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
+endif()
 
 IF (APPLE)
     set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
@@ -84,13 +103,24 @@ ELSEIF (UNIX)
     set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
 ENDIF()
 
-file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
-file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
-
-add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy 
-   "$<$<CONFIG:Release>:${BIN_RELEASE_FILES}>$<$<CONFIG:Debug>:${BIN_DEBUG_FILES}>" 
-   "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
-   COMMAND_EXPAND_LISTS
-   VERBATIM
-)
+if(DEFINED SLIDEIO_INSTALL_DIR)
+    file(GLOB SLIDEIO_BIN_FILES $ENV{SLIDEIO_INSTALL_DIR}/bin/*.*)
+    add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
+       COMMAND ${CMAKE_COMMAND} -E copy 
+       ${SLIDEIO_BIN_FILES}
+       "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
+       COMMAND_EXPAND_LISTS
+       VERBATIM
+    )
+else()
+    file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
+    file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
+    
+    add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
+       COMMAND ${CMAKE_COMMAND} -E copy 
+       "$<$<CONFIG:Release>:${BIN_RELEASE_FILES}>$<$<CONFIG:Debug>:${BIN_DEBUG_FILES}>" 
+       "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
+       COMMAND_EXPAND_LISTS
+       VERBATIM
+    )
+endif()
