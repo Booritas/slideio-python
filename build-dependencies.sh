@@ -60,21 +60,21 @@ os_name=$(detect_os)
 echo "Operating system: $os_name"
 
 if [ "$os_name" == "AlmaLinux-x86_64" ]; then
-    release_profile=$SLIDEIO_HOME/conan/Linux/manylinux/linux_release
-    debug_profile=$SLIDEIO_HOME/conan/Linux/manylinux/linux_debug
+    release_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/manylinux/linux_release
+    debug_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/manylinux/linux_debug
 elif [ "$os_name" == "Ubuntu" ]; then
-    release_profile=$SLIDEIO_HOME/conan/Linux/ubuntu/linux_release
-    debug_profile=$SLIDEIO_HOME/conan/Linux/ubuntu/linux_debug
+    release_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/ubuntu/linux_release
+    debug_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/ubuntu/linux_debug
 elif [ "$os_name" == "AlmaLinux-s390x" ]; then
-    release_profile=$SLIDEIO_HOME/conan/Linux/s390x/linux_release
-    debug_profile=$SLIDEIO_HOME/conan/Linux/s390x/linux_debug
+    release_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/s390x/linux_release
+    debug_profile=$SLIDEIO_PYTHON_HOME/conan/Linux/s390x/linux_debug
 elif [ "$os_name" == "OSX" ]; then
     if [ "$(uname -m)" = "arm64" ]; then
-        release_profile=$SLIDEIO_HOME/conan/OSX/arm/osx_release
-        debug_profile=$SLIDEIO_HOME/conan/OSX/arm/osx_debug
+        release_profile=$SLIDEIO_PYTHON_HOME/conan/OSX/arm/osx_release
+        debug_profile=$SLIDEIO_PYTHON_HOME/conan/OSX/arm/osx_debug
     elif [ "$(uname -m)" = "x86_64" ]; then
-        release_profile=$SLIDEIO_HOME/conan/OSX/x86-64/osx_release
-        debug_profile=$SLIDEIO_HOME/conan/OSX/x86-64/osx_debug
+        release_profile=$SLIDEIO_PYTHON_HOME/conan/OSX/x86-64/osx_release
+        debug_profile=$SLIDEIO_PYTHON_HOME/conan/OSX/x86-64/osx_debug
     else
         echo "Error: No conan profile for this macOS architecture."
         exit 1

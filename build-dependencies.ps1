@@ -12,15 +12,15 @@ if (-not $env:CONAN_INDEX_HOME) {
     throw "Environment variable CONAN_INDEX_HOME  (root directory of conan-center-indes reporistory) is not set."
 }
 
-if (-not $env:SLIDEIO_HOME) {
-    throw "Environment variable SLIDEIO_HOME (root directory of SlideIO repository) is not set."
+if (-not $env:SLIDEIO_PYTHON_HOME) {
+    throw "Environment variable SLIDEIO_PYTHON_HOME (root directory of SlideIO repository) is not set."
 }
 
 # Set profile based on build type
 if ($BuildType -eq 'debug') {
-    $profile = "$env:SLIDEIO_HOME/conan/Windows/x86_64_debug"
+    $profile = "$env:SLIDEIO_PYTHON_HOME/conan/Windows/x86_64_debug"
 } else {
-    $profile = "$env:SLIDEIO_HOME/conan/Windows/x86_64_release"
+    $profile = "$env:SLIDEIO_PYTHON_HOME/conan/Windows/x86_64_release"
 }
 
 Write-Host "Profile: $profile"
