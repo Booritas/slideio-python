@@ -104,9 +104,14 @@ class CMakeBuild(build_ext):
         print(f"----Python executable: {sys.executable}")
         cmake_args = [
           '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
-            '-DCMAKE_TOOLCHAIN_FILE=./cmake/conan_toolchain.cmake'
+            '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
+        
+        # Only use conan toolchain if SLIDEIO_INSTALL_DIR is not defined
+        if not os.environ.get('SLIDEIO_INSTALL_DIR'):
+            toolchain_path = './cmake/conan_toolchain.cmake'
+            if os.path.exists(os.path.join(ext.source_dir, toolchain_path)):
+                cmake_args.append('-DCMAKE_TOOLCHAIN_FILE=' + toolchain_path)
 
         cfg = 'Release'
         build_args = ['--config', cfg, "--target", "slideiopybind"]
