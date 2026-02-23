@@ -197,7 +197,7 @@ PySize PyScene::adjustTargetSize(const PyRect& rect, const PySize& size) const
     else if(trgSize.height()<=0)
     {
         // only target width is set.
-        // compute target width from the height
+        // compute target height from the width
         double coef = double(trgSize.width())/double(rect.width());
         double height = coef*double(rect.height());
         trgSize.height() = static_cast<int>(std::lround(height));
