@@ -84,7 +84,7 @@ PYBIND11_MODULE(slideiopybind, m) {
             Reads rectangular block of the scene with optional rescaling.
 
             Args:
-                rect: block rectangle, defined as a tuple (x, y, widht, height), where x,y - pixel coordinates of the left top corner of the block, width, height - block width and height
+                rect: block rectangle, defined as a tuple (x, y, width, height), where x,y - pixel coordinates of the left top corner of the block, width, height - block width and height
                 size: size of the block after rescaling (0,0) - no scaling.
                 channel_indices: array of channel indices to be retrieved. [] - all channels.
                 slices: range of z slices (first, last+1) to be retrieved. (0,3) for 0,1,2 slices. (0,0) for the first slice only.
