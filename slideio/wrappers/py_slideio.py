@@ -123,7 +123,7 @@ class Scene(object):
     @property
     def metadata_format(self):
         '''Get format of the metadata of the scene'''
-        return self.scene.format_metadata()
+        return self.scene.metadata_format
 
     def get_zoom_level_info(self, index):
         '''Get information about a level in the internal image pyramid.'''
