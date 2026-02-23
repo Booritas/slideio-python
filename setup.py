@@ -12,15 +12,25 @@ import setuptools.command.build_py
 from packaging.version import Version
 from ctypes.util import find_library
 
-version = '2.8.'
+def _read_cmake_version():
+    """Read the base version (MAJOR.MINOR) from CMakeLists.txt."""
+    cmake_file = os.path.join(os.path.dirname(__file__), 'CMakeLists.txt')
+    with open(cmake_file, encoding='utf-8') as f:
+        for line in f:
+            m = re.search(r'set\s*\(\s*projectVersion\s+([\d]+\.[\d]+)', line)
+            if m:
+                return m.group(1)
+    raise RuntimeError("Could not determine version from CMakeLists.txt")
+
+_base_version = _read_cmake_version()
 vrs_sub = '1'
 
 if os.environ.get('CI_PIPELINE_IID'):
     ci_id = os.environ['CI_PIPELINE_IID']
-    if (isinstance(ci_id, str) and len(ci_id)>0) or isinstance(ci_id, int):
+    if (isinstance(ci_id, str) and len(ci_id) > 0) or isinstance(ci_id, int):
         vrs_sub = ci_id
 
-version = version + vrs_sub
+version = _base_version + '.' + vrs_sub
 
 source_dir= os.path.abspath('./')
 build_dir= os.path.abspath('./build')
