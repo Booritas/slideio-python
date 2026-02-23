@@ -9,8 +9,11 @@ import shutil
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 import setuptools.command.build_py
-from packaging.version import Version
 from ctypes.util import find_library
+
+def _parse_version(v):
+    """Parse a dotted version string into a comparable integer tuple."""
+    return tuple(int(x) for x in v.split('.'))
 
 def _read_cmake_version():
     """Read the base version (MAJOR.MINOR) from CMakeLists.txt."""
@@ -97,10 +100,10 @@ class CMakeBuild(build_ext):
             )
 
         if platform.system() == "Windows":
-            cmake_version = Version(
+            cmake_version = _parse_version(
                 re.search(r'version\s*([\d.]+)', out.decode()).group(1)
             )
-            if cmake_version < Version('3.1.0'):
+            if cmake_version < _parse_version('3.1.0'):
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
 
         for ext in self.extensions:
@@ -231,7 +234,6 @@ setup(
         'Programming Language :: Python :: 3.14',
     ],
     install_requires=['numpy'],
-    setup_requires=['packaging'],
     extras_require={},
     data_files=[(
         '.', [
