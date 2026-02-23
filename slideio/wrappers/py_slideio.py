@@ -137,30 +137,34 @@ class Scene(object):
         '''Get raw metadata of the scene'''
         return self.scene.get_raw_metadata()
 
-    def get_aux_image(self, image_name, size=(0,0), channel_indices=[]):
+    def get_aux_image(self, image_name, size=(0,0), channel_indices=None):
         '''Get auxiliary image as a numpy array.
 
         Args:
             image_name: name of the auxiliary image
-            channel_indices: array of channel indices to be retrieved. [] - all channels.
+            channel_indices: array of channel indices to be retrieved. None or [] - all channels.
             size: size of the block after rescaling. (0,0) - no scaling.
         '''
+        if channel_indices is None:
+            channel_indices = []
         scene = self.scene.get_aux_image(image_name)
         return scene.read_block(rect=(0,0,0,0), size=size, channel_indices=channel_indices, slices=(0,1), frames=(0,1))
 
-    def read_block(self, rect=(0,0,0,0), size=(0,0), channel_indices=[], slices=(0,1), frames=(0,1)):
+    def read_block(self, rect=(0,0,0,0), size=(0,0), channel_indices=None, slices=(0,1), frames=(0,1)):
         '''Reads rectangular block of the scene with optional rescaling.
 
         Args:
-            rect: block rectangle, defined as a tuple (x, y, widht, height), where x,y - pixel coordinates of the  top left corner of the block relatively to the scene top left corner, width, height - block width and height
+            rect: block rectangle, defined as a tuple (x, y, width, height), where x,y - pixel coordinates of the top left corner of the block relatively to the scene top left corner, width, height - block width and height
             size: size of the block after rescaling. (0,0) - no scaling.
-            channel_indices: array of channel indices to be retrieved. [] - all channels.
+            channel_indices: array of channel indices to be retrieved. None or [] - all channels.
             slices: range of z slices (first, last+1) to be retrieved. (0,3) for 0,1,2 slices. (0,0) for the first slice only.
             frames: range of time frames (first, last+1) to be retrieved.
 
         Returns:
             numpy array with pixel values
         '''
+        if channel_indices is None:
+            channel_indices = []
         return self.scene.read_block(rect, size, channel_indices, slices, frames)
 
     def get_channel_data_type(self, channel):
@@ -260,14 +264,16 @@ class Slide(object):
         '''Get list of auxiliary image names'''
         return self.slide.get_aux_image_names()
 
-    def get_aux_image_raster(self, image_name, size=(0,0), channel_indices=[]):
+    def get_aux_image_raster(self, image_name, size=(0,0), channel_indices=None):
         '''Get auxiliary image as numpy array.
 
         Args:
             image_name: name of the auxiliary image
-            channel_indices: array of channel indices to be retrieved. [] - all channels.
+            channel_indices: array of channel indices to be retrieved. None or [] - all channels.
             size: size of the block after rescaling. (0,0) - no scaling.
         '''
+        if channel_indices is None:
+            channel_indices = []
         scene = self.slide.get_aux_image(image_name)
         return scene.read_block(rect=(0,0,0,0), size=size, channel_indices=channel_indices, slices=(0,1), frames=(0,1))
 
