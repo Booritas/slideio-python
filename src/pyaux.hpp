@@ -7,7 +7,7 @@
 class PyRect : public std::tuple<int, int, int, int>
 {
 public:
-    PyRect(const std::tuple<int, int, int, int>& tulpe) : std::tuple<int, int, int, int>(tulpe)
+    PyRect(const std::tuple<int, int, int, int>& tuple) : std::tuple<int, int, int, int>(tuple)
     {
     }
     int& x() { return std::get<0>(*this);}
@@ -23,7 +23,7 @@ public:
 class PySize : public std::tuple<int, int>
 {
 public:
-    PySize(const std::tuple<int, int>& tulpe) : std::tuple<int, int>(tulpe)
+    PySize(const std::tuple<int, int>& tuple) : std::tuple<int, int>(tuple)
     {
     }
     int& width() { return std::get<0>(*this);}
