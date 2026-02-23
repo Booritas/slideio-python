@@ -29,19 +29,13 @@ from .libs.slideiopybind import (
 )
 
 __all__ = [
-    "get_driver_ids",
-    "open_slide",
+    # public enums and parameter types re-exported from the C++ binding
     "Compression",
-    "Slide",
-    "Scene",
-    "set_log_level",
-    "convert_scene",
     "SVSJpegParameters",
     "SVSJp2KParameters",
     "OMETIFFJpegParameters",
     "OMETIFFJp2KParameters",
     "ColorTransformation",
-    "transform_scene",
     "ColorSpace",
     "GaussianBlurFilter",
     "MedianBlurFilter",
@@ -51,4 +45,14 @@ __all__ = [
     "LaplacianFilter",
     "BilateralFilter",
     "CannyFilter",
+    # internal aliases used by the wrappers layer (not part of the public API)
+    "CoreSlide",
+    "CoreScene",
+    "core_get_driver_ids",
+    "core_open_slide",
+    "core_set_log_level",
+    "core_convert_scene",
+    "core_convert_scene_ex",
+    "core_transform_scene",
+    "core_get_version",
 ]
