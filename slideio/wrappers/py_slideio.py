@@ -311,7 +311,7 @@ def get_driver_ids():
 
 def compare_images(left, right):
     '''Compares two images represented by numpy arrays'''
-    return core_compare_images(left, right)
+    raise NotImplementedError("compare_images is not implemented in the current version of slideio")
 
 def set_log_level(log_level:str):
     '''Sets log level'''
