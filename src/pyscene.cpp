@@ -119,6 +119,28 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
     const int numChannels = channelIndices.empty()?imageChannels:static_cast<int>(channelIndices.size());
 
     const py::dtype dtype = getChannelDataType(refChannel);
+    const slideio::DataType refDataType = m_scene->getChannelDataType(refChannel);
+
+    // Validate that every requested channel shares the same data type as the
+    // reference channel. A numpy array can only hold one dtype, so mixing
+    // types would silently corrupt the data for all non-reference channels.
+    if (!channelIndices.empty()) {
+        for (int idx : channelIndices) {
+            if (m_scene->getChannelDataType(idx) != refDataType) {
+                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
+                              << "Channel " << idx << " has a different data type than the reference channel " << refChannel
+                              << ". Use channel_indices to select channels of the same type.";
+            }
+        }
+    } else {
+        for (int ch = 1; ch < imageChannels; ++ch) {
+            if (m_scene->getChannelDataType(ch) != refDataType) {
+                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
+                              << "Channel " << ch << " has a different data type than channel 0. "
+                              << "Use channel_indices to select channels of the same type.";
+            }
+        }
+    }
 
     PyRect blockRect = adjustSourceRect(rect);
     PySize blockSize = adjustTargetSize(blockRect, size);
