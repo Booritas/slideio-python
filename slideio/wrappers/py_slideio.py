@@ -32,16 +32,20 @@ class Scene(object):
     def __repr__(self):
         return self.scene.__repr__()
 
-    def __del__(self):
-        if self.scene is not None:
+    def close(self):
+        '''Release the underlying C++ scene object.'''
+        if hasattr(self, 'scene') and self.scene is not None:
             del self.scene
             self.scene = None
+
+    def __del__(self):
+        self.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__del__()
+        self.close()
 
     @property
     def name(self):
@@ -213,17 +217,20 @@ class Slide(object):
     def __repr__(self):
         return self.slide.__repr__()
 
+    def close(self):
+        '''Release the underlying C++ slide object.'''
+        if hasattr(self, 'slide') and self.slide is not None:
+            del self.slide
+            self.slide = None
+
     def __del__(self):
-        if hasattr(self, 'slide'):
-            if self.slide is not None:
-                del self.slide
-                self.slide = None
+        self.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__del__()
+        self.close()
 
     def get_scene(self, index):
         '''Return slide scene by index'''
