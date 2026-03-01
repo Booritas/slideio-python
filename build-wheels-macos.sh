@@ -70,7 +70,9 @@ for version in "${python_versions[@]}"; do
    echo "Installing wheel in conda environment for Python $version"
    python -m pip install wheel
    python -m pip install conan
-   python setup.py sdist bdist_wheel
+   python -m pip install build
+   python -m build
+   #python setup.py sdist bdist_wheel
    ls -la ./dist
    
    deactivate_and_remove_conda_env $version

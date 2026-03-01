@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slideio"
+dynamic = ["version"]
+description = "Reading of medical images"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "BSD-3-Clause"
+authors = [
+    { name = "Stanislav Melnikov", email = "stanislav.melnikov@gmail.com" }
+]
+keywords = ["images", "pathology", "tissue", "medical", "czi", "svs", "afi", "scn", "ndpi"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+requires-python = ">=3.7"
+dependencies = ["numpy"]
+
+[project.urls]
+Documentation = "http://slideio.com"
+"Source Code" = "https://github.com/Booritas/slideio"
+
+[project.optional-dependencies]
+dev = ["autopep8", "pylint", "pytest", "numpy"]
+
+[tool.setuptools.packages.find]
+where = ["."]

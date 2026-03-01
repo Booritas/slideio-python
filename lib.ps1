@@ -147,10 +147,11 @@ function Build-Wheels {
         python --version
         Write-Host "Installing wheel in conda environment for Python $version"
         python -m pip install setuptools
+        python -m pip install build
         python -m pip install wheel
         python -m pip install conan
     
-        python setup.py sdist bdist_wheel
+        python -m build
         Get-ChildItem -Path .\dist
         Deactivate-CondaEnv
         Remove-CondaEnv -version $version

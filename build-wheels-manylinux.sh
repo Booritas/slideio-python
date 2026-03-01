@@ -18,7 +18,9 @@ build_wheel()
     rm -rf ../build_py
     $py -m pip install -U pip setuptools
     $py -m pip install wheel
-    $py setup.py sdist bdist_wheel
+    $py -m pip install build
+    $py -m build
+    #$py setup.py sdist bdist_wheel
 
     echo "-------------End of processing Python version: $py_version ---------------"
   else

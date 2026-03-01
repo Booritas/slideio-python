@@ -6,9 +6,8 @@ import subprocess
 import fnmatch
 import shutil
 
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-import setuptools.command.build_py
 from ctypes.util import find_library
 
 def _parse_version(v):
@@ -35,8 +34,8 @@ if os.environ.get('CI_PIPELINE_IID'):
 
 version = _base_version + '.' + vrs_sub
 
-source_dir= os.path.abspath('./')
-build_dir= os.path.abspath('./build')
+source_dir = os.path.abspath('./')
+build_dir = os.path.abspath('./build')
 
 def get_platform():
     platforms = {
@@ -54,7 +53,7 @@ PLATFORM = get_platform()
 
 REDISTR_LIBS = []
 
-if PLATFORM=='Windows':
+if PLATFORM == 'Windows':
     REDISTR_LIBS = [
         'concrt140.dll',
         'msvcp140.dll',
@@ -72,15 +71,6 @@ def find_shared_libs(dir, pattern):
         for filename in fnmatch.filter(filenames, pattern):
             matches.append(os.path.join(root, filename))
     return matches
-
-# Get the long description from the README file
-here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, './README.md'), encoding='utf-8') as f:
-    long_description = f.read()
-
-# Get requirements from requirements-dev.txt file
-with open(os.path.join(here, 'requirements-dev.txt')) as f:
-    requirements_dev = f.read().replace('==', '>=').splitlines()
 
 
 class CMakeExtension(Extension):
@@ -116,10 +106,10 @@ class CMakeBuild(build_ext):
             self.get_ext_fullpath(ext.name)))
         print(f"----Python executable: {sys.executable}")
         cmake_args = [
-          '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
-        
+
         # Only use conan toolchain if SLIDEIO_INSTALL_DIR is not defined
         if not os.environ.get('SLIDEIO_INSTALL_DIR'):
             toolchain_path = './cmake/conan_toolchain.cmake'
@@ -160,21 +150,21 @@ class CMakeBuild(build_ext):
             ['cmake', '--build', '.'] + build_args,
             cwd=self.build_temp
         )
-        patterns = ["*.so","*.so.*"]
+        patterns = ["*.so", "*.so.*"]
         if PLATFORM == "Windows":
-            patterns = ["*.dll","*.pyd"]
+            patterns = ["*.dll", "*.pyd"]
         elif PLATFORM == "Macos":
             patterns = ["*.so", "*.dylib"]
-            
+
         print("----Look for shared libraries int directory", self.build_temp)
         extra_files = []
         for pattern in patterns:
             files = find_shared_libs(self.build_temp, pattern)
-            if len(files)>0:
+            if len(files) > 0:
                 extra_files.extend(files)
 
         print("----Found libraries:", extra_files)
-       
+
         wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
         if os.path.exists(wheel_lib_dir):
             shutil.rmtree(wheel_lib_dir)
@@ -183,62 +173,16 @@ class CMakeBuild(build_ext):
         for fl in extra_files:
             file_name = os.path.basename(fl)
             destination = os.path.join(wheel_lib_dir, file_name)
-            print("Copy",fl,"->",destination)
+            print("Copy", fl, "->", destination)
             shutil.move(fl, destination)
 
         for lib in REDISTR_LIBS:
             shutil.copy(find_library(lib), wheel_lib_dir)
 
-        # if PLATFORM == "Linux":
-        #     # Modify rpath for files with prefix 'libslideio' and suffix 'so'
-        #     for root, dirs, files in os.walk(wheel_lib_dir):
-        #         for file in files:
-        #             if file.startswith('libslideio') and file.endswith('.so'):
-        #                 file_path = os.path.join(root, file)
-        #                 print("Modifying rpath for", file_path)
-        #                 subprocess.check_call(['patchelf', '--set-rpath', '$ORIGIN', file_path])        
-        
 
 setup(
-    name='slideio',
     version=version,
-    author='Stanislav Melnikov',
-    author_email='stanislav.melnikov@gmail.com',
-    description='Reading of medical images',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    ext_modules=[CMakeExtension(name = 'slideio', source_dir=source_dir, build_dir=build_dir)],
+    ext_modules=[CMakeExtension(name='slideio', source_dir=source_dir, build_dir=build_dir)],
     cmdclass=dict(build_ext=CMakeBuild),
-    packages=find_packages(),
-    project_urls={
-        'Documentation':'http://slideio.com',
-        "Source Code": "https://github.com/Booritas/slideio"
-    },
-    keywords = 'images, pathology, tissue, medical, czi, svs, afi, scn, ndpi',
-    package_data={},
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Bio-Informatics',
-        'Topic :: Scientific/Engineering :: Image Recognition',
-        'Topic :: Scientific/Engineering :: Medical Science Apps.',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
-        'Programming Language :: Python :: 3.13',
-        'Programming Language :: Python :: 3.14',
-    ],
-    install_requires=['numpy'],
-    extras_require={},
-    data_files=[(
-        '.', [
-            'requirements-dev.txt'
-        ]
-    )],
     zip_safe=False,
 )
