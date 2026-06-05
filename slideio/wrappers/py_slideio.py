@@ -129,6 +129,11 @@ class Scene(object):
         '''Get format of the metadata of the scene'''
         return self.scene.metadata_format
 
+    @property
+    def metadata(self):
+        '''Scene metadata as a tree of dictionaries, lists and scalar values.'''
+        return self.scene.metadata
+
     def get_zoom_level_info(self, index):
         '''Get information about a level in the internal image pyramid.'''
         return self.scene.get_zoom_level_info(index)
@@ -256,6 +261,11 @@ class Slide(object):
     def metadata_format(self) -> str:
         '''Format of the slide metadata'''
         return self.slide.metadata_format
+
+    @property
+    def metadata(self):
+        '''Slide metadata as a tree of dictionaries, lists and scalar values.'''
+        return self.slide.metadata
 
     @property
     def file_path(self):

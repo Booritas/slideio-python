@@ -1,5 +1,6 @@
 ﻿#include "pyslide.hpp"
 #include "pyscene.hpp"
+#include "pymetadata.hpp"
 
 int PySlide::getNumScenes() const
 {
@@ -33,6 +34,11 @@ const std::string& PySlide::getRawMetadata() const
 slideio::MetadataFormat PySlide::getMetadataFormat() const
 {
     return m_slide->getMetadataFormat();
+}
+
+pybind11::object PySlide::getMetadata() const
+{
+    return metadataToPyObject(m_slide->getMetadata());
 }
 
 std::list<std::string> PySlide::getAuxImageNames() const

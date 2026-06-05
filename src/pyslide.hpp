@@ -7,6 +7,7 @@
 
 #include "pyscene.hpp"
 #include "slideio/slideio/slide.hpp"
+#include <pybind11/pybind11.h>
 
 class PySlide
 {
@@ -23,6 +24,7 @@ public:
     std::shared_ptr<PyScene> getSceneByName(const std::string& sceneName);
     const std::string& getRawMetadata() const;
     slideio::MetadataFormat getMetadataFormat() const;
+    pybind11::object getMetadata() const;
     std::list<std::string> getAuxImageNames() const;
     int getNumAuxImages() const;
     std::shared_ptr<PyScene> getAuxImage(const std::string& imageName);

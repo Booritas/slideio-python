@@ -68,6 +68,8 @@ set(BINDLIB_SOURCE
    src/pyslide.cpp
    src/pyscene.hpp
    src/pyscene.cpp
+   src/pymetadata.hpp
+   src/pymetadata.cpp
    src/pyconverter.hpp
    src/pyconverter.cpp
    src/pytransformation.hpp

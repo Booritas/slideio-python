@@ -5,6 +5,7 @@
 #include <pybind11/numpy.h>
 #include "pyslide.hpp"
 #include "pyerror.hpp"
+#include "pymetadata.hpp"
 
 namespace py = pybind11;
 
@@ -252,6 +253,11 @@ std::string PyScene::getRawMetadata() const
 slideio::MetadataFormat PyScene::getMetadataFormat() const
 {
     return m_scene->getMetadataFormat();
+}
+
+pybind11::object PyScene::getMetadata() const
+{
+    return metadataToPyObject(m_scene->getMetadata());
 }
 
 std::string PyScene::toString() const {
