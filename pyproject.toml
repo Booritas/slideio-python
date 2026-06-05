@@ -7,7 +7,7 @@ name = "slideio"
 dynamic = ["version"]
 description = "Reading of medical images"
 readme = { file = "README.md", content-type = "text/markdown" }
-license = "BSD-3-Clause"
+license = { text = "BSD-3-Clause" }
 authors = [
     { name = "Stanislav Melnikov", email = "stanislav.melnikov@gmail.com" }
 ]
