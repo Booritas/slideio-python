@@ -35,12 +35,12 @@ ConverterParameters* pyCreateConverterParameters(ImageFormat format, Compression
 void pyConvertFile(std::shared_ptr<PyScene>& pyScene, ConverterParameters* parameters, const std::string& filePath)
 {
     std::shared_ptr<slideio::Scene> scene = extractScene(pyScene);
-    slideio::converter::convertScene(scene, *parameters, filePath);
+    slideio::converter::convertScene(scene, *parameters, filePath, parameters->getTileBatchSize());
 }
 
 void pyConvertFileEx(std::shared_ptr<PyScene>& pyScene, ConverterParameters* parameters, const std::string& filePath, py::function callback)
 {
     const std::function<void(int)>& cb = callback;
     std::shared_ptr<slideio::Scene> scene = extractScene(pyScene);
-    slideio::converter::convertScene(scene, *parameters, filePath, cb);
+    slideio::converter::convertScene(scene, *parameters, filePath, parameters->getTileBatchSize(), cb);
 }

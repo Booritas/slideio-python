@@ -150,7 +150,8 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_property_readonly("format", &slideio::converter::ConverterParameters::getFormat, "Format of output file")
         .def_property("rect", &slideio::converter::ConverterParameters::getRect, &slideio::converter::ConverterParameters::setRect, "Scene region")
         .def_property("z_slice_range", &slideio::converter::ConverterParameters::getSliceRange, &slideio::converter::ConverterParameters::setSliceRange, "Z slice range")
-        .def_property("t_frame_range", &slideio::converter::ConverterParameters::getTFrameRange, &slideio::converter::ConverterParameters::setTFrameRange, "Time frame range");
+        .def_property("t_frame_range", &slideio::converter::ConverterParameters::getTFrameRange, &slideio::converter::ConverterParameters::setTFrameRange, "Time frame range")
+        .def_property("tile_batch_size", &slideio::converter::ConverterParameters::getTileBatchSize, &slideio::converter::ConverterParameters::setTileBatchSize, "Tile batch size");
     py::class_<slideio::converter::SVSConverterParameters, slideio::converter::ConverterParameters>(m, "SVSParameters")
         .def_property("tile_width", &slideio::converter::SVSConverterParameters::getTileWidth, &slideio::converter::SVSConverterParameters::setTileWidth, "Width of tiles in pixels")
         .def_property("tile_height", &slideio::converter::SVSConverterParameters::getTileHeight, &slideio::converter::SVSConverterParameters::setTileHeight, "Height of tiles in pixels")
