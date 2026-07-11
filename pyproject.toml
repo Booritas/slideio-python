@@ -40,3 +40,4 @@ dev = ["autopep8", "pylint", "pytest", "numpy"]
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["slideio*"]
