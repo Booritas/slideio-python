@@ -151,7 +151,15 @@ function Build-Wheels {
         python -m pip install wheel
         python -m pip install conan
     
-        python -m build
+        # Build without isolation: `build` otherwise bootstraps an isolated
+        # venv and re-executes pip under it (`pip --python ...`). That venv is
+        # a venv of the conda env and does NOT inherit conda's DLL-directory
+        # handling, so under an activated conda env (base off PATH) it fails to
+        # load Library\bin\libexpat.dll and crashes with
+        # "ImportError: DLL load failed while importing pyexpat".
+        # The build backend deps (setuptools>=61, wheel) are already installed
+        # in the conda env above, so isolation is unnecessary.
+        python -m build --no-isolation
         Get-ChildItem -Path .\dist
         Deactivate-CondaEnv
         Remove-CondaEnv -version $version
