@@ -6,9 +6,9 @@ os=$(uname -s)
 platform=$(uname -m)
 minversion=8
 maxversion=14
-if [[ "$os" == "Darwin" && "$platform" == "arm64" ]]; then
-  # Set an environment variable if OS is macOS and platform is ARM
-  minversion=8
+if [[ "$os" == "Darwin" && "$platform" == "x86_64" ]]; then
+  # On macOS Intel, cap the Python version at 3.13
+  maxversion=13
 fi
 
 # Debug only
