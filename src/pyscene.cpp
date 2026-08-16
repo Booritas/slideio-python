@@ -120,30 +120,9 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
     const int numChannels = channelIndices.empty()?imageChannels:static_cast<int>(channelIndices.size());
 
     const py::dtype dtype = getChannelDataType(refChannel);
-    const slideio::DataType refDataType = m_scene->getChannelDataType(refChannel);
+    validateChannelDataTypes(channelIndices);
 
-    // Validate that every requested channel shares the same data type as the
-    // reference channel. A numpy array can only hold one dtype, so mixing
-    // types would silently corrupt the data for all non-reference channels.
-    if (!channelIndices.empty()) {
-        for (int idx : channelIndices) {
-            if (m_scene->getChannelDataType(idx) != refDataType) {
-                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
-                              << "Channel " << idx << " has a different data type than the reference channel " << refChannel
-                              << ". Use channel_indices to select channels of the same type.";
-            }
-        }
-    } else {
-        for (int ch = 1; ch < imageChannels; ++ch) {
-            if (m_scene->getChannelDataType(ch) != refDataType) {
-                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
-                              << "Channel " << ch << " has a different data type than channel 0. "
-                              << "Use channel_indices to select channels of the same type.";
-            }
-        }
-    }
-
-    PyRect blockRect = adjustSourceRect(rect);
+    PyRect blockRect = adjustSourceRect(rect, m_scene->getRect());
     PySize blockSize = adjustTargetSize(blockRect, size);
 
     // source block parameters
@@ -184,19 +163,111 @@ pybind11::array PyScene::readBlock(std::tuple<int, int, int, int> rect,
     return numpy_array;
 }
 
-PyRect PyScene::adjustSourceRect(const PyRect& rect) const
+pybind11::array PyScene::readBlockFromLevel(int level, std::tuple<int, int, int, int> rect,
+    std::tuple<int, int> size, std::vector<int> channelIndices,
+    std::tuple<int,int> sliceRange, std::tuple<int,int> tframeRange) const
+{
+    const slideio::LevelInfo* levelInfo = m_scene->getLevelInfo(level);
+    if (levelInfo == nullptr) {
+        RAISE_PYERROR << "Unexpected null pointer received for zoom level: " << level;
+    }
+    const int imageChannels = getNumChannels();
+
+    const int startSlice = std::max(0,std::get<0>(sliceRange));
+    const int stopSlice = std::get<1>(sliceRange);
+    const int startFrame = std::max(0,std::get<0>(tframeRange));
+    const int stopFrame = std::get<1>(tframeRange);
+    const int numSlices = std::max(1,stopSlice - startSlice);
+    const int numFrames = std::max(1,stopFrame - startFrame);
+
+    const int refChannel = channelIndices.empty()?0:channelIndices[0];
+    const int numChannels = channelIndices.empty()?imageChannels:static_cast<int>(channelIndices.size());
+
+    const py::dtype dtype = getChannelDataType(refChannel);
+    validateChannelDataTypes(channelIndices);
+
+    // A zero width or height extends to the edge of the level, not of the scene: rect is in
+    // level coordinates throughout this method.
+    const PyRect levelBounds(std::tuple<int,int,int,int>(0, 0, levelInfo->getSize().width,
+                                                        levelInfo->getSize().height));
+    PyRect blockRect = adjustSourceRect(rect, levelBounds);
+    PySize blockSize = adjustTargetSize(blockRect, size);
+
+    const int memSize = m_scene->getBlockSize(blockSize, refChannel, numChannels, numSlices, numFrames);
+
+    py::array::ShapeContainer shape;
+    shape->push_back(blockSize.height());
+    shape->push_back(blockSize.width());
+    if(numChannels>1)
+        shape->push_back(numChannels);
+    if(numSlices>1)
+        shape->insert(shape->begin(), numSlices);
+    if(numFrames>1)
+        shape->insert(shape->begin(), numFrames);
+
+    py::array numpy_array(dtype, shape);
+
+    if(startSlice==0 && stopSlice<=1 && startFrame==0 && stopFrame<=1)
+    {
+        py::gil_scoped_release release;
+        m_scene->readResampledLevelBlockChannels(level, blockRect, blockSize, channelIndices,
+                                                 numpy_array.mutable_data(), memSize);
+    }
+    else
+    {
+        if(stopSlice<=startSlice)
+        {
+            RAISE_PYERROR << "Invalid slice range (" << startSlice << "," << stopSlice << ")";
+        }
+        if(stopFrame<=startFrame)
+        {
+            RAISE_PYERROR << "Invalid time frame range (" << startFrame << "," << stopFrame << ")";
+        }
+        py::gil_scoped_release release;
+        m_scene->readResampledLevel4DBlockChannels(level, blockRect, blockSize, channelIndices,
+                                                   sliceRange, tframeRange,
+                                                   numpy_array.mutable_data(), memSize);
+    }
+
+    return numpy_array;
+}
+
+PyRect PyScene::adjustSourceRect(const PyRect& rect, const PyRect& bounds)
 {
     PyRect srcRect(rect);
-    const PyRect imageRect = m_scene->getRect();
     if(srcRect.width()==0)
     {
-        srcRect.width() = imageRect.width() - srcRect.x();
+        srcRect.width() = bounds.width() - srcRect.x();
     }
     if(srcRect.height()==0)
     {
-        srcRect.height() = imageRect.height() - srcRect.y();
+        srcRect.height() = bounds.height() - srcRect.y();
     }
     return srcRect;
+}
+
+void PyScene::validateChannelDataTypes(const std::vector<int>& channelIndices) const
+{
+    const int imageChannels = getNumChannels();
+    const int refChannel = channelIndices.empty() ? 0 : channelIndices[0];
+    const slideio::DataType refDataType = m_scene->getChannelDataType(refChannel);
+    if (!channelIndices.empty()) {
+        for (int idx : channelIndices) {
+            if (m_scene->getChannelDataType(idx) != refDataType) {
+                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
+                              << "Channel " << idx << " has a different data type than the reference channel " << refChannel
+                              << ". Use channel_indices to select channels of the same type.";
+            }
+        }
+    } else {
+        for (int ch = 1; ch < imageChannels; ++ch) {
+            if (m_scene->getChannelDataType(ch) != refDataType) {
+                RAISE_PYERROR << "Cannot read channels with different data types into a single numpy array. "
+                              << "Channel " << ch << " has a different data type than channel 0. "
+                              << "Use channel_indices to select channels of the same type.";
+            }
+        }
+    }
 }
 
 PySize PyScene::adjustTargetSize(const PyRect& rect, const PySize& size) const

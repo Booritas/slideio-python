@@ -96,6 +96,33 @@ PYBIND11_MODULE(slideiopybind, m) {
                 numpy array with pixel values
             )del"
         )
+        .def("read_block_from_level", &PyScene::readBlockFromLevel,
+            py::arg("level"),
+            py::arg("rect") = std::tuple<int, int, int, int>(0, 0, 0, 0),
+            py::arg("size") = std::tuple<int, int>(0, 0),
+            py::arg("channel_indices") = std::vector<int>(),
+            py::arg("slices") = std::tuple<int, int>(0, 1),
+            py::arg("frames") = std::tuple<int, int>(0, 1),
+            R"del(
+            Reads a rectangular block from an explicitly selected zoom level.
+
+            Unlike read_block, this method reads from the level you name and no other, and
+            the rectangle is given in that level's own pixel coordinates. Use it when you
+            already know which level you want -- a tiled viewer, for instance -- so that no
+            coordinate conversion and no implicit level selection happen on the way.
+
+            Args:
+                level: index of the zoom level, in range(scene.num_zoom_levels).
+                rect: block rectangle in the coordinate system of the level, as a tuple (x, y, width, height). A width or height of 0 extends to the edge of the level. Parts of the rectangle outside the level are filled with the background value.
+                size: size of the block after rescaling. (0,0) - no scaling, native level pixels. Rescaling is performed from the named level only.
+                channel_indices: array of channel indices to be retrieved. [] - all channels.
+                slices: range of z slices (first, last+1) to be retrieved.
+                frames: range of time frames (first, last+1) to be retrieved.
+
+            Returns:
+                numpy array with pixel values
+            )del"
+        )
         .def("__repr__", &PyScene::toString);
     py::enum_<slideio::MetadataFormat>(m, "MetadataFormat")
         .value("None", slideio::MetadataFormat::None)
@@ -258,6 +285,9 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_property_readonly("level", &slideio::LevelInfo::getLevel, "Level index")
         .def_property_readonly("scale", &slideio::LevelInfo::getScale, "Scale coefficient")
         .def_property_readonly("magnification", &slideio::LevelInfo::getMagnification, "Level magnification")
+        .def_property_readonly("tile_count", &slideio::LevelInfo::getTileCount, "Number of tiles of the level")
+        .def("get_tile_rect", &slideio::LevelInfo::getTileRect, py::arg("index"),
+             "Returns the rectangle of a tile in level coordinates. Edge tiles overhang the level.")
         .def("__repr__", &slideio::LevelInfo::toString);
     py::class_<slideio::Size>(m, "Size")
         .def(py::init<int, int>())

@@ -176,6 +176,29 @@ class Scene(object):
             channel_indices = []
         return self.scene.read_block(rect, size, channel_indices, slices, frames)
 
+    def read_block_from_level(self, level, rect=(0,0,0,0), size=(0,0), channel_indices=None, slices=(0,1), frames=(0,1)):
+        '''Reads a rectangular block from an explicitly selected zoom level.
+
+        Unlike read_block, this reads from the level you name and no other, and rect is
+        given in that level's own pixel coordinates. Use it when you already know the
+        level you want, so that no coordinate conversion and no implicit level selection
+        happen on the way.
+
+        Args:
+            level: index of the zoom level, in range(scene.num_zoom_levels)
+            rect: block rectangle in the coordinate system of the level, as a tuple (x, y, width, height). A width or height of 0 extends to the edge of the level. Parts outside the level come back as background.
+            size: size of the block after rescaling. (0,0) - no scaling. Rescaling is performed from the named level only.
+            channel_indices: array of channel indices to be retrieved. None or [] - all channels.
+            slices: range of z slices (first, last+1) to be retrieved.
+            frames: range of time frames (first, last+1) to be retrieved.
+
+        Returns:
+            numpy array with pixel values
+        '''
+        if channel_indices is None:
+            channel_indices = []
+        return self.scene.read_block_from_level(level, rect, size, channel_indices, slices, frames)
+
     def get_channel_data_type(self, channel):
         '''Returns data type for a scene channel by index
         Args:

@@ -35,6 +35,9 @@ public:
     pybind11::array readBlock(std::tuple<int,int,int,int> rect,
         std::tuple<int,int> size, std::vector<int> channelIndices,
         std::tuple<int,int> sliceRange, std::tuple<int,int> tframeRange) const;
+    pybind11::array readBlockFromLevel(int level, std::tuple<int,int,int,int> rect,
+        std::tuple<int,int> size, std::vector<int> channelIndices,
+        std::tuple<int,int> sliceRange, std::tuple<int,int> tframeRange) const;
     std::list<std::string> getAuxImageNames() const;
     int getNumAuxImages() const;
     std::shared_ptr<PyScene> getAuxImage(const std::string& imageName);
@@ -45,8 +48,13 @@ public:
     int getNumZoomLevels() const;
     const slideio::LevelInfo& getZoomLevelInfo(int zoomLevel) const;
 private:
-    PyRect adjustSourceRect(const PyRect& rect) const;
+    // bounds is the rectangle a zero width or height extends to: the scene rect for
+    // read_block, the level rect for read_block_from_level.
+    static PyRect adjustSourceRect(const PyRect& rect, const PyRect& bounds);
     PySize adjustTargetSize(const PyRect& rect, const PySize& size) const;
+    // Every channel of a numpy array carries one dtype, so a selection mixing types cannot
+    // be returned. Shared by both read methods.
+    void validateChannelDataTypes(const std::vector<int>& channelIndices) const;
 
 private:
     std::shared_ptr<slideio::Scene> m_scene;
