@@ -3,7 +3,7 @@ cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
 set(PROJECT_NAME slideio-python)
-set(projectVersion 2.8)
+set(projectVersion 2.9)
 set(LIBRARY_NAME slideiopybind)
 
 if(DEFINED ENV{SLIDEIO_INSTALL_DIR})

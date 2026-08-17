@@ -59,7 +59,7 @@ function Invoke-ConanCreateSlideio {
 }
 
 try {
-    Invoke-ConanCreateSlideio -FolderPath "recipes\slideio\all" -Version "2.8.1"
+    Invoke-ConanCreateSlideio -FolderPath "recipes\slideio\all" -Version "2.9.0"
 }
 catch {
     Write-Error "An error occurred: $_"
