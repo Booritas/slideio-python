@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Python bindings (via pybind11) for the **SlideIO** C++ library — a reader for medical/pathology whole-slide image formats (SVS, CZI, NDPI, DICOM, etc.) that returns image data as NumPy arrays. The C++ library itself lives in a separate repository ([Booritas/slideio](https://github.com/Booritas/slideio)) and is consumed here as a prebuilt Conan package (see `conanfile.txt`, e.g. `slideio/2.8.1@slideio/stable`) or from a local install via the `SLIDEIO_INSTALL_DIR` environment variable.
+Python bindings (via pybind11) for the **SlideIO** C++ library — a reader for medical/pathology whole-slide image formats (SVS, CZI, NDPI, DICOM, etc.) that returns image data as NumPy arrays. The C++ library itself lives in a separate repository ([Booritas/slideio](https://github.com/Booritas/slideio)) and is consumed here as a prebuilt Conan package (see `conanfile.txt`, currently `slideio/2.9.0@slideio/stable`) or from a local install via the `SLIDEIO_INSTALL_DIR` environment variable.
 
 `pybind11` is a git submodule — clone with `--recursive` or run `git submodule update --init`.
 
@@ -58,4 +58,4 @@ Per-platform profiles live in `conan/{Windows,Linux,OSX}/...` (Windows: `x86_64_
 
 ## Version bumps
 
-The slideio C++ package version appears in several places that must stay in sync: `conanfile.txt` (the `[requires]` line), `build-dependencies.ps1` / `conan.sh` (conan create version), and the release branch name (e.g. `2.8.1`). The Python package MAJOR.MINOR comes from `projectVersion` in `CMakeLists.txt`.
+The slideio C++ package version appears in several places that must stay in sync: `conanfile.txt` (the `[requires]` line), `build-dependencies.ps1` / `conan.sh` (conan create version; these two are easy to miss and have drifted apart before), and the release branch name (e.g. `2.9.0`). The Python package MAJOR.MINOR comes from `projectVersion` in `CMakeLists.txt`.

@@ -26,6 +26,10 @@ Key features include:
 - **Whole-slide reading**: Load entire slides or specific regions of interest.  
 - **Efficient scaling**: Rapidly generate scaled images from large slides using internal zoom pyramids.  
 - **Format flexibility**: Handle diverse medical and biological imaging formats through an extensible driver system.
+- **Explicit zoom level access**: Read a region from a pyramid level you name, in that level's own coordinate
+  system, with `Scene.read_block_from_level` - useful for tiled viewers and tile caches that already know which
+  level they want.
+- **Structured metadata**: Access slide and scene metadata as a navigable tree through the `metadata` property.
 
 ### Supported Image Formats
 
@@ -42,7 +46,13 @@ The following table lists the currently implemented drivers and their correspond
 | **NDPI**   | [Hamamatsu NDPI](https://www.hamamatsu.com/eu/en/product/life-science-and-medical-systems/digital-slide-scanner/U12388-01.html) | *.ndpi | [Hamamatsu](https://www.hamamatsu.com/eu/en.html) |  |
 | **VSI**    | Olympus VSI | *.vsi | - | - |
 | **QPTIFF** | PerkinElmer Vectra QPTIFF | *.qptiff | [Akoya Biosciences](https://www.akoyabio.com/software-data-analysis/) | [PerkinElmer Vectra](https://www.akoyabio.com/phenoimager/instruments/vectra-3-0/) |
+| **OMETIFF** | [OME-TIFF](https://ome-model.readthedocs.io/en/stable/ome-tiff/) | *.ome.tif, *.ome.tiff, *.ome.tf2, *.ome.tf8, *.ome.btf | [Open Microscopy Environment](https://www.openmicroscopy.org/) | - |
+| **PHTIFF** | Philips TIFF | *.tif, *.tiff | [Philips](https://www.philips.com/healthcare) | [Philips IntelliSite Pathology Solution](https://www.usa.philips.com/healthcare/resources/feature-detail/intellisite-pathology-solution) |
 | **GDAL**   | Common image formats (JPEG, PNG, TIFF, etc.) | *.jpeg, *.jpg, *.tif, *.tiff, *.png | - | - |
+
+Philips TIFF files use the generic `*.tif`/`*.tiff` extensions, so the PHTIFF driver identifies them by their
+embedded metadata. `open_slide` with the default `driver="AUTO"` therefore selects the right driver, while plain
+TIFF files continue to be read by GDAL and OME-TIFF files by the OMETIFF driver.
 
 To learn more about the library and additional features, visit the [SlideIO Website](https://booritas.github.io/slideio/).
 
