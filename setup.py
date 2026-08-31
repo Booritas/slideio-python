@@ -110,12 +110,6 @@ class CMakeBuild(build_ext):
             '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
 
-        # Only use conan toolchain if SLIDEIO_INSTALL_DIR is not defined
-        if not os.environ.get('SLIDEIO_INSTALL_DIR'):
-            toolchain_path = './cmake/conan_toolchain.cmake'
-            if os.path.exists(os.path.join(ext.source_dir, toolchain_path)):
-                cmake_args.append('-DCMAKE_TOOLCHAIN_FILE=' + toolchain_path)
-
         cfg = 'Release'
         build_args = ['--config', cfg, "--target", "slideiopybind"]
 
@@ -156,16 +150,25 @@ class CMakeBuild(build_ext):
         elif PLATFORM == "Macos":
             patterns = ["*.so", "*.dylib"]
 
+        wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
+        staged_prefix = os.path.abspath(wheel_lib_dir) + os.sep
+
         print("----Look for shared libraries int directory", self.build_temp)
         extra_files = []
         for pattern in patterns:
-            files = find_shared_libs(self.build_temp, pattern)
-            if len(files) > 0:
-                extra_files.extend(files)
+            for fl in find_shared_libs(self.build_temp, pattern):
+                # Skip anything already inside the staging directory. build_temp
+                # contains wheel_lib_dir, so a rebuild in a warm tree rediscovers
+                # the libraries the previous run staged and would try to copy each
+                # onto itself. shutil.move used to hide this -- renaming a path
+                # onto itself is a silent no-op -- but such an entry is a leftover,
+                # not a build product.
+                if os.path.abspath(fl).startswith(staged_prefix):
+                    continue
+                extra_files.append(fl)
 
         print("----Found libraries:", extra_files)
 
-        wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
         if os.path.exists(wheel_lib_dir):
             shutil.rmtree(wheel_lib_dir)
         os.makedirs(wheel_lib_dir)
@@ -174,7 +177,11 @@ class CMakeBuild(build_ext):
             file_name = os.path.basename(fl)
             destination = os.path.join(wheel_lib_dir, file_name)
             print("Copy", fl, "->", destination)
-            shutil.move(fl, destination)
+            # copy2, not move: the libraries must stay in the CMake output
+            # directory. A second build in a warm tree does not re-run the
+            # PRE_BUILD staging command when the target is already up to date,
+            # and a moved library would leave the next wheel without it.
+            shutil.copy2(fl, destination)
 
         for lib in REDISTR_LIBS:
             shutil.copy(find_library(lib), wheel_lib_dir)
