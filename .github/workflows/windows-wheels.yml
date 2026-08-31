@@ -2,25 +2,12 @@ name: Build Windows Wheels
 
 on:
   workflow_dispatch:
-    inputs:
-      upload-conan-packages:
-        description: 'Upload conan packages'
-        required: true
-        default: true
-        type: boolean
-      build-conan-packages:
-        description: 'Build conan packages'
-        required: true
-        default: false
-        type: boolean
+
 env:
   CONAN_REVISIONS_ENABLED: 1
   CONAN_DISABLE_CHECK_COMPILER: 1
-  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
-  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
-  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
   SLIDEIO_HOME: ${{ github.workspace }}/slideio
-  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
+
 jobs:
   build-win:
     runs-on: windows-2022
@@ -28,23 +15,18 @@ jobs:
     steps:
     - name: Setup cmake
       uses: jwlawson/actions-setup-cmake@v2
-          
+
     - name: display cmake version
       run: cmake --version
-  
+
     - name: checkout the repository
       uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        # recursive, not true: the C++ library is the extern/slideio submodule
+        # and carries four submodules of its own.
+        submodules: 'recursive'
         path: slideio
 
-    - name: checkout conan repository
-      uses: actions/checkout@v4
-      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
-      with:
-        repository: Booritas/conan-center-index
-        path: conan-center-index
-      
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: true
@@ -55,45 +37,32 @@ jobs:
       run: |
         conda create -n conan2 python=3.12 -y
         conda activate conan2
-        python -m pip install conan
-        conan remote add slideio ${{ secrets.CONAN_SERVER }}
-        conan remote auth slideio
+        python -m pip install conan distro
         conan --version
         conda deactivate
-  
-    - name: Install conan packages from conan-center-index
-      shell: pwsh
-      working-directory: slideio
-      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
-      run: |
-        conda activate conan2
-        ./conan-one.ps1
-        conda deactivate
-  
-    - name: install dependencies
-      shell: pwsh
-      working-directory: slideio
-      run: |
-        conda activate conan2
-        python install.py -a conan -c release
-        conda deactivate
 
-    - name: Upload conan packages
+    - name: cache conan packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.conan2
+        key: conan-windows-${{ hashFiles('slideio/.git/modules/extern/slideio/HEAD') }}
+        restore-keys: |
+          conan-windows-
+
+    - name: build the slideio C++ library
       shell: pwsh
       working-directory: slideio
-      if: ${{ github.event.inputs.upload-conan-packages == 'true' }}
       run: |
         conda activate conan2
-        conan upload -c "*" -r slideio    
+        python build-slideio.py -c release
         conda deactivate
 
     - name: Build python wheels
       shell: pwsh
       working-directory: slideio
       run: |
-        ./build-wheels-win.ps1    
-  
+        ./build-wheels-win.ps1
+
     - uses: actions/upload-artifact@v4
       with:
         path: ./slideio/dist/*.whl
-  

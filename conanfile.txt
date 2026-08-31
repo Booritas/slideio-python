@@ -1,2 +1,0 @@
-[requires]
-slideio/2.9.0@slideio/stable

@@ -2,87 +2,50 @@ name: Linux Wheels
 
 on:
   workflow_dispatch:
-    inputs:
-      upload-conan-packages:
-        description: 'Upload conan packages'
-        required: true
-        default: true
-        type: boolean
-      build-conan-packages:
-        description: 'Build conan packages'
-        required: true
-        default: false
-        type: boolean
+
 env:
   CONAN_REVISIONS_ENABLED: 1
   CONAN_DISABLE_CHECK_COMPILER: 1
-  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
-  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
-  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
   SLIDEIO_HOME: ${{ github.workspace }}/slideio
-  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     container:
-      image: booritas/slideio-manylinux_2_28_x86_64:2.8.0
+      # 2.10.0 ships a prebuilt conan cache for slideio's dependencies, which is
+      # what makes building the C++ library from source in CI affordable.
+      image: booritas/slideio-manylinux_2_28_x86_64:2.10.0
 
     steps:
     - name: checkout the repository
       uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        # recursive, not true: the C++ library is the extern/slideio submodule
+        # and carries four submodules of its own.
+        submodules: 'recursive'
         path: slideio
 
-    - name: checkout conan repository
-      uses: actions/checkout@v4
-      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
+    - name: cache conan packages
+      uses: actions/cache@v4
       with:
-        repository: Booritas/conan-center-index
-        path: conan-center-index
+        path: ~/.conan2
+        key: conan-manylinux-${{ hashFiles('slideio/.git/modules/extern/slideio/HEAD') }}
+        restore-keys: |
+          conan-manylinux-
 
-    - name: add conan repository
+    - name: build the slideio C++ library
       shell: bash -el {0}
       working-directory: slideio
       run: |
-        conan remote add slideio ${{ secrets.CONAN_SERVER }}
-        conan remote auth slideio
+        python3 build-slideio.py -c release
 
-    - name: check conan configuration
-      shell: bash -el {0}
-      working-directory: slideio
-      run: |
-        conan config show tools.*
-
-    - name: Install conan packages from conan-center-index
-      shell: bash -el {0}
-      working-directory: slideio
-      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
-      run: |
-        ./conan-one.sh
-            
-    - name: install dependencies
-      shell: bash  -el {0}
-      working-directory: slideio
-      run: |
-        python3 install.py -a conan -c release
-
-    - name: Upload conan packages
-      shell: bash -el {0}
-      working-directory: slideio
-      if: ${{ github.event.inputs.upload-conan-packages == 'true' }}
-      run: |
-        conan upload -c "*" -r slideio
-  
     - name: build wheels
-      shell: bash  -el {0}
+      shell: bash -el {0}
       working-directory: slideio
       run: |
         ./build-wheels-manylinux.sh
-  
+
     - uses: actions/upload-artifact@v4
       with:
           name: wheels
           path: ./slideio/wheelhouse
-  

@@ -1,9 +1,0 @@
-[settings]
-os=Macos
-arch=x86_64
-compiler=apple-clang
-compiler.version=13.0
-compiler.libcxx=libc++
-build_type=Release
-compiler.cppstd=17
-[options]

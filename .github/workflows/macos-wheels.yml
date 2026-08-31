@@ -3,16 +3,6 @@ name: Build Macos Wheels
 on:
   workflow_dispatch:
     inputs:
-      upload-conan-packages:
-        description: 'Upload conan packages'
-        required: true
-        default: true
-        type: boolean
-      build-conan-packages:
-        description: 'Build conan packages'
-        required: true
-        default: false
-        type: boolean
       os:
         description: 'Operating System'
         required: true
@@ -25,11 +15,7 @@ on:
 env:
   CONAN_REVISIONS_ENABLED: 1
   CONAN_DISABLE_CHECK_COMPILER: 1
-  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_USER }}
-  CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
-  CONAN_SERVER: ${{ secrets.CONAN_SERVER }}
   SLIDEIO_HOME: ${{ github.workspace }}/slideio
-  CONAN_INDEX_HOME: ${{ github.workspace }}/conan-center-index
 
 jobs:
   build-mac-wheels:
@@ -46,14 +32,10 @@ jobs:
     - name: checkout the repository
       uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        # recursive, not true: the C++ library is the extern/slideio submodule
+        # and carries four submodules of its own.
+        submodules: 'recursive'
         path: slideio
-
-    - name: checkout conan repository
-      uses: actions/checkout@v4
-      with:
-        repository: Booritas/conan-center-index
-        path: conan-center-index
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
@@ -65,35 +47,24 @@ jobs:
       run: |
         conda create -n conan2 python=3.12 -y
         conda activate conan2
-        python -m pip install conan
-        conan remote add slideio ${{ secrets.CONAN_SERVER }}
-        conan remote auth slideio
+        python -m pip install conan distro
         conan --version
         conda deactivate
 
-    - name: Install conan packages from conan-center-index
-      shell: bash -el {0}
-      working-directory: slideio
-      if: ${{ github.event.inputs.build-conan-packages == 'true' }}
-      run: |
-        df -h /
-        conda activate conan2
-        ./conan-one.sh
-        if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
-          conan upload -c "*" -r slideio
-        fi
-        df -h /
-        conda deactivate
+    - name: cache conan packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.conan2
+        key: conan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('slideio/.git/modules/extern/slideio/HEAD') }}
+        restore-keys: |
+          conan-${{ runner.os }}-${{ runner.arch }}-
 
-    - name: Install dependencies
+    - name: build the slideio C++ library
       shell: bash -el {0}
       working-directory: slideio
       run: |
         conda activate conan2
-        python install.py -a conan -c release
-        if [ "${{ github.event.inputs.upload-conan-packages }}" == "true" ]; then
-          conan upload -c "*" -r slideio
-        fi
+        python build-slideio.py -c release
         conda deactivate
 
     - name: Build wheels
@@ -102,8 +73,7 @@ jobs:
       run: |
         ./build-wheels-macos.sh
         ./rename-macos-wheels.sh ./dist
-        
+
     - uses: actions/upload-artifact@v4
       with:
         path: ./slideio/dist/*.whl
-  
