@@ -8,6 +8,8 @@ Replace the Conan package `slideio/2.9.0@slideio/stable` as the standard way thi
 repository obtains the slideio C++ library with a git submodule at
 `extern/slideio`, built from source into a local install prefix.
 
+This ships as version **2.10.0** of the Python package, on branch `v2.10.0`.
+
 The `SLIDEIO_INSTALL_DIR` environment override stays; the Conan path for slideio
 itself goes away, together with the private Conan remote, the
 `Booritas/conan-center-index` fork checkout and the scripts that drive them.
@@ -113,11 +115,10 @@ for py in 3.8 .. 3.14:                      # loop otherwise unchanged
    branch matching this package's MAJOR.MINOR. HTTPS rather than the C++ repo's
    own SSH remote, so `actions/checkout` can fetch it without a key.
 
-   The version to pin is a decision, not a lookup: `CMakeLists.txt` here declares
-   `projectVersion 2.9` and `conanfile.txt` requires `slideio/2.9.0`, while the
-   C++ repository's active branch is `v2.10.0`. Pin the commit that corresponds to
-   the currently shipped `2.9.0` so this change is behaviour-neutral, and bump the
-   submodule to 2.10.0 as a separate, reviewable commit afterwards.
+   Pinned at `bd112f8c3e531f5027f686fe7d98f01e15df9309`, the tip of
+   `origin/v2.10.0` in the C++ repository. This migration ships as part of the
+   2.10.0 release, so `projectVersion` in `CMakeLists.txt` moves from `2.9` to
+   `2.10` in the same change.
 2. **`CMakeLists.txt`** — single prefix branch per the resolution order above.
 3. **`build-slideio.py`** — new root script: verify the submodule is initialised,
    run its `sync-toolchain.py`, then its `install.py -a install -c release` into
