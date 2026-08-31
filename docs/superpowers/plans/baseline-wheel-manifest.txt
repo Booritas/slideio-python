@@ -22,3 +22,39 @@ libslideio-vsi.dylib
 libslideio-zvi.dylib
 libslideio.dylib
 slideiopybind.cpython-313-darwin.so
+
+## post-migration
+# from: slideio-2.10.0-cp312-cp312-macosx_26_0_arm64.whl
+# built from the extern/slideio submodule at bd112f8c, macOS arm64.
+#
+# Four differences from the baseline, all caused by the 2.8.0 -> 2.10.0 version
+# change and none by the submodule migration:
+#
+#   - libglog.{0.7.1,2,}.dylib  REMOVED. slideio replaced glog with spdlog
+#     (extern/slideio/software-docs/plans/2026-08-22-logging-library-replacement.md);
+#     spdlog is linked statically and PRIVATE into slideio-core, so it ships no
+#     shared library.
+#   - libslideio-base.dylib     REMOVED. The base module was merged into core
+#     (extern/slideio/software-docs/plans/2026-08-23-merge-base-into-core.md).
+#   - slideiopybind.cpython-313 -> cpython-312. The python version of the build
+#     machine, not a library difference.
+#
+# All 11 driver libraries plus core, imagetools, converter, transformer and the
+# main slideio library are present. No driver was dropped.
+libslideio-afi.dylib
+libslideio-converter.dylib
+libslideio-core.dylib
+libslideio-czi.dylib
+libslideio-dcm.dylib
+libslideio-gdal.dylib
+libslideio-imagetools.dylib
+libslideio-ndpi.dylib
+libslideio-ometiff.dylib
+libslideio-pke.dylib
+libslideio-scn.dylib
+libslideio-svs.dylib
+libslideio-transformer.dylib
+libslideio-vsi.dylib
+libslideio-zvi.dylib
+libslideio.dylib
+slideiopybind.cpython-312-darwin.so

@@ -1238,3 +1238,48 @@ Download each artifact and repeat Step 4's manifest check per platform. Do not r
 ## Regulatory note
 
 Changing how a released component's binaries are produced is a build and configuration-management change under IEC 62304 clause 8, and depending on how slideio is classified in the device file it may count as a design change requiring re-validation and QMS documentation. This cannot be determined from the repository — confirm with GRC / Regulatory Affairs before release. This plan does not include that step because it is not a code change.
+
+
+---
+
+## Execution deviations
+
+Recorded during execution on macOS/arm64, 2026-08-31. Three things the plan did not
+anticipate; each was verified before moving on.
+
+1. **`sync-toolchain.py` is opt-in, not the default.** The plan had
+   `build-slideio.py` always run the submodule's `sync-toolchain.py`. On a host with
+   Apple clang 21 and Conan 2.10.2 that rewrites the profiles to
+   `compiler.version=21.0` and the first `conan install` dies with
+   `Invalid setting '21.0' is not a valid 'settings.compiler.version' value`
+   (Conan's `settings.yml` stops at 16). It also leaves four tracked profile files
+   modified inside the submodule on every build. The flag is now `--sync-toolchain`,
+   off by default; the committed profiles are used as-is. `compiler.version` labels
+   package IDs rather than selecting a compiler, and with `-b missing` every
+   dependency is compiled by the real host toolchain either way.
+
+2. **The submodule's `install.py` always appends the configuration to the prefix.**
+   It installs into `<prefix>/release` or `<prefix>/debug` regardless of `-c` — this
+   repository's own (now deleted) `install.py` behaved differently, which is where
+   the plan's assumption came from. `build-slideio.py` now installs into a staging
+   directory inside the submodule build tree and moves the one configuration up, so
+   `extern/slideio-install` stays a plain install prefix with `include/`, `lib/` and
+   `bin/` at its root. `CMakeLists.txt` needed no change.
+
+3. **`setup.py` needed a third fix: exclude the staging directory from the library
+   scan.** `find_shared_libs` walks `build_temp`, which *contains* `wheel_lib_dir`,
+   so a warm-tree rebuild rediscovers the libraries the previous run staged and tries
+   to copy each onto itself — `shutil.SameFileError`. The old `shutil.move` hid this
+   because renaming a path onto itself is a silent no-op; switching to `copy2`
+   surfaced it. Files already under `wheel_lib_dir` are now skipped when collecting.
+   This was a latent bug in the existing code, not one the migration introduced.
+
+Also confirmed during execution:
+
+- The recursive submodule fetch works with slideio's `Booritas@` URLs unchanged, so
+  **Task 7 Step 4 (URL rewrite) was not needed**.
+- `booritas/slideio-manylinux_2_28_x86_64:2.10.0` is published, so the Linux
+  container tag was bumped as planned.
+- `bd112f8c` carries `projectVersion 2.9.0` in the C++ repository's own
+  `CMakeLists.txt` even though it is the tip of `origin/v2.10.0`. That is an unbumped
+  version string upstream, not a wrong pin.
