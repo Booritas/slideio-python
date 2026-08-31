@@ -1,0 +1,24 @@
+# baseline from: slideio-2.8.0-cp313-cp313-macosx_11_0_arm64.whl
+# built the pre-migration (conan) way; package version 2.8.0, macOS arm64.
+# Closest available conan-built wheel -- no 2.9.0 wheel exists in this tree.
+libglog.0.7.1.dylib
+libglog.2.dylib
+libglog.dylib
+libslideio-afi.dylib
+libslideio-base.dylib
+libslideio-converter.dylib
+libslideio-core.dylib
+libslideio-czi.dylib
+libslideio-dcm.dylib
+libslideio-gdal.dylib
+libslideio-imagetools.dylib
+libslideio-ndpi.dylib
+libslideio-ometiff.dylib
+libslideio-pke.dylib
+libslideio-scn.dylib
+libslideio-svs.dylib
+libslideio-transformer.dylib
+libslideio-vsi.dylib
+libslideio-zvi.dylib
+libslideio.dylib
+slideiopybind.cpython-313-darwin.so
