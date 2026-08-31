@@ -123,13 +123,34 @@ git config --global url."https://github.com/".insteadOf "https://Booritas@github
 
 Record which of the two happened — the CI workflows in Task 7 need the rewrite step only if it was required here.
 
+**Result on macOS/arm64, 2026-08-31: the plain recursive fetch succeeded. No URL
+rewrite was needed, so Task 7 Step 4 does not apply.** Note that `--recursive`
+additionally clones a googletest copy nested inside each of `jpegxrcodec` and
+`pole`; slideio's own build forces their tests off and does not need them, but
+there is no way to exclude them from a recursive fetch. The cost is download time
+only.
+
 - [ ] **Step 3: Confirm the CMakeLists the submodule ships is the expected one**
 
 ```bash
 grep -n 'set(projectVersion' extern/slideio/CMakeLists.txt
 ```
 
-Expected: `set(projectVersion 2.10.0)`. If it says something else, the pinned commit is wrong — stop and re-check the SHA.
+Expected: `set(projectVersion 2.9.0)`.
+
+This is not a mistake and not the wrong SHA: `bd112f8c` is the tip of
+`origin/v2.10.0` (verify with `git ls-remote --heads https://github.com/Booritas/slideio.git`),
+but the C++ repository has not yet bumped its own `projectVersion` string on that
+branch. The branch identity is what pins the version here. Bumping the C++ repo's
+version string is that repository's concern and out of scope for this plan.
+
+Confirm the pin by branch rather than by version string:
+
+```bash
+git ls-remote --heads https://github.com/Booritas/slideio.git v2.10.0
+```
+
+Expected: `bd112f8c3e531f5027f686fe7d98f01e15df9309	refs/heads/v2.10.0`.
 
 - [ ] **Step 4: Ignore the install prefix**
 

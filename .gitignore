@@ -464,3 +464,6 @@ wheelhouse/
 cmake/
 .vscode/
 build-local/
+# Local install prefix produced by build-slideio.py from the extern/slideio
+# submodule. Generated, never committed.
+extern/slideio-install/
