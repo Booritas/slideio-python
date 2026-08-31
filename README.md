@@ -62,10 +62,17 @@ To learn more about the library and additional features, visit the [SlideIO Webs
 
 The C++ **SlideIO** library is not downloaded as a prebuilt package. It is the
 `extern/slideio` git submodule and is compiled from source into a local install
-prefix, which the Python extension then links against. No Conan remote, account or
-credentials are needed: every C++ dependency resolves from
-[conan center](https://conan.io/center), and the few that do not live there are
-submodules of the slideio repository.
+prefix, which the Python extension then links against.
+
+**[Conan 2](https://conan.io) must be installed to build it.** slideio depends on
+OpenCV, DCMTK, libtiff, ICU and around a dozen other C++ libraries, and Conan is
+what resolves and builds them. Install it with `pip install conan`.
+
+What you do *not* need is a Conan remote, an account or credentials: every
+dependency resolves from the public [conan center](https://conan.io/center), and
+the few that do not live there are submodules of the slideio repository. Conan is
+used only for the C++ library — building the Python extension itself involves no
+Conan step at all.
 
 ### Prerequisites
 
@@ -75,7 +82,7 @@ submodules of the slideio repository.
 | CMake 3.10+ | |
 | A C++17 compiler | GCC, Clang, or Visual Studio 2022 on Windows |
 | Python 3.7+ | Wheels are published for 3.8–3.14 |
-| [Conan 2](https://conan.io) | `pip install conan` — used only to build the C++ library |
+| **[Conan 2](https://conan.io)** | **Required** to build the C++ library: `pip install conan` |
 | `distro` | Linux only: `pip install distro` |
 | `build` | `pip install build` — only if you want a wheel rather than an install |
 
@@ -95,14 +102,24 @@ git submodule update --init --recursive
 
 ### 2. Build the C++ library
 
+This is the step that needs Conan. Make sure it is installed first:
+
+```bash
+pip install conan          # plus: pip install distro   (Linux only)
+conan --version            # Conan 2.x
+```
+
+Then:
+
 ```bash
 python build-slideio.py
 ```
 
 This builds the `extern/slideio` submodule and installs it into
-`extern/slideio-install/` (`include/`, `lib/`, `bin/`). The first run compiles the
-whole dependency graph from source and takes a while; later runs reuse the Conan
-cache.
+`extern/slideio-install/` (`include/`, `lib/`, `bin/`). Conan resolves slideio's
+C++ dependencies from conan center and builds whatever is missing, then CMake
+builds slideio itself. The first run compiles the whole dependency graph from
+source and takes a while; later runs reuse the Conan cache in `~/.conan2`.
 
 | Option | Effect |
 |---|---|
