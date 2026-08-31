@@ -68,8 +68,7 @@ prefix, which the Python extension then links against.
 OpenCV, DCMTK, libtiff, ICU and around a dozen other C++ libraries, and Conan is
 what resolves and builds them. Install it with `pip install conan`.
 
-What you do *not* need is a Conan remote, an account or credentials: every
-dependency resolves from the public [conan center](https://conan.io/center), and
+Every dependency resolves from the public [conan center](https://conan.io/center), and
 the few that do not live there are submodules of the slideio repository. Conan is
 used only for the C++ library — building the Python extension itself involves no
 Conan step at all.
