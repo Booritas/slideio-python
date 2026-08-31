@@ -56,6 +56,12 @@ generate_python_versions minversion maxversion
 rm -rf ./dist
 eval "$(conda shell.bash hook)"
 
+# The C++ library does not depend on the Python version. Build it once, into
+# extern/slideio-install, before the loop below starts deleting ./build.
+# No-op when the prefix already matches the checked-out submodule commit.
+python3 build-slideio.py -c release
+
+
 for version in "${python_versions[@]}"; do
 
    echo "-----processing python verion $version"
@@ -69,7 +75,6 @@ for version in "${python_versions[@]}"; do
    python --version
    echo "Installing wheel in conda environment for Python $version"
    python -m pip install wheel
-   python -m pip install conan
    python -m pip install build
    python -m build
    #python setup.py sdist bdist_wheel

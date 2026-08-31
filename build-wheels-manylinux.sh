@@ -31,6 +31,11 @@ build_wheel()
 
 set -e
 
+# The C++ library does not depend on the Python version. Build it once, into
+# extern/slideio-install, before the loop below starts deleting ./build.
+# No-op when the prefix already matches the checked-out submodule commit.
+python3 build-slideio.py -c release
+
 rm -rf ./dist
 
 echo "Build python wheels"

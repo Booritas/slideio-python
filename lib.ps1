@@ -149,7 +149,6 @@ function Build-Wheels {
         python -m pip install setuptools
         python -m pip install build
         python -m pip install wheel
-        python -m pip install conan
     
         # Build without isolation: `build` otherwise bootstraps an isolated
         # venv and re-executes pip under it (`pip --python ...`). That venv is
