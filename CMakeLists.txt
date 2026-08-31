@@ -3,15 +3,36 @@ cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
 set(PROJECT_NAME slideio-python)
-set(projectVersion 2.9)
+set(projectVersion 2.10)
 set(LIBRARY_NAME slideiopybind)
 
+# The slideio C++ library is resolved from an install prefix -- include/, lib/
+# and bin/ -- in one of two ways:
+#
+#   1. SLIDEIO_INSTALL_DIR in the environment, for developing against a slideio
+#      build that lives outside this repository. It always wins when set.
+#   2. Otherwise extern/slideio-install, produced by build-slideio.py from the
+#      extern/slideio submodule. This is the standard path.
+#
+# There is no longer a conan branch: slideio itself is no longer consumed as a
+# conan package, so this repository needs no conan remote and no conanfile. The
+# submodule's own build still uses conan for slideio's dependencies, but that is
+# entirely internal to extern/slideio.
 if(DEFINED ENV{SLIDEIO_INSTALL_DIR})
-    message(STATUS "Using SLIDEIO_INSTALL_DIR: $ENV{SLIDEIO_INSTALL_DIR}")
     set(SLIDEIO_INSTALL_DIR $ENV{SLIDEIO_INSTALL_DIR})
+    message(STATUS "slideio from SLIDEIO_INSTALL_DIR: ${SLIDEIO_INSTALL_DIR}")
 else()
-    set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    set(SLIDEIO_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/slideio-install)
+    message(STATUS "slideio from submodule prefix: ${SLIDEIO_INSTALL_DIR}")
+endif()
+
+if(NOT EXISTS ${SLIDEIO_INSTALL_DIR}/include/slideio)
+    message(FATAL_ERROR
+        "No slideio installation at ${SLIDEIO_INSTALL_DIR}.\n"
+        "Build it from the submodule:\n"
+        "    git submodule update --init --recursive\n"
+        "    python build-slideio.py\n"
+        "or point SLIDEIO_INSTALL_DIR at an existing slideio install prefix.")
 endif()
 
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
@@ -47,12 +68,8 @@ add_subdirectory(pybind11)
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
-if(DEFINED SLIDEIO_INSTALL_DIR)
-    include_directories(${SLIDEIO_INSTALL_DIR}/include)
-    link_directories(${SLIDEIO_INSTALL_DIR}/lib)
-else()
-    find_package(slideio)
-endif()
+include_directories(${SLIDEIO_INSTALL_DIR}/include)
+link_directories(${SLIDEIO_INSTALL_DIR}/lib)
 
 include_directories(
     ${INCLUDE_ROOT} 
@@ -83,18 +100,12 @@ pybind11_extension(${LIBRARY_NAME})
 message(STATUS "Python Include directory: ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "Python Library: ${PYTHON_LIBRARIES}")
 
-include(helper.cmake)
-
-if(DEFINED SLIDEIO_INSTALL_DIR)
-    target_link_libraries(${LIBRARY_NAME} PRIVATE 
-        slideio
-        slideio-converter
-        slideio-transformer
-        slideio-core
-    )
-else()
-    target_link_libraries(${LIBRARY_NAME} PRIVATE slideio::slideio)
-endif()
+target_link_libraries(${LIBRARY_NAME} PRIVATE
+    slideio
+    slideio-converter
+    slideio-transformer
+    slideio-core
+)
 
 IF (APPLE)
     set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
@@ -104,24 +115,14 @@ ELSEIF (UNIX)
     set_target_properties(${LIBRARY_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
 ENDIF()
 
-if(DEFINED SLIDEIO_INSTALL_DIR)
-    file(GLOB SLIDEIO_BIN_FILES $ENV{SLIDEIO_INSTALL_DIR}/bin/*.*)
-    add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
-       COMMAND ${CMAKE_COMMAND} -E copy 
-       ${SLIDEIO_BIN_FILES}
-       "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
-       COMMAND_EXPAND_LISTS
-       VERBATIM
-    )
-else()
-    file(GLOB BIN_DEBUG_FILES ${slideio_BIN_DIRS_DEBUG}/*.*)
-    file(GLOB BIN_RELEASE_FILES ${slideio_BIN_DIRS_RELEASE}/*.*)
-    
-    add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
-       COMMAND ${CMAKE_COMMAND} -E copy 
-       "$<$<CONFIG:Release>:${BIN_RELEASE_FILES}>$<$<CONFIG:Debug>:${BIN_DEBUG_FILES}>" 
-       "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
-       COMMAND_EXPAND_LISTS
-       VERBATIM
-    )
-endif()
+# Stage the slideio runtime next to the extension so setup.py can collect both
+# into slideio/core/libs. Globbed at configure time: re-run cmake after
+# rebuilding the submodule if the set of libraries changed.
+file(GLOB SLIDEIO_BIN_FILES ${SLIDEIO_INSTALL_DIR}/bin/*.*)
+add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy
+   ${SLIDEIO_BIN_FILES}
+   "$<TARGET_FILE_DIR:${LIBRARY_NAME}>"
+   COMMAND_EXPAND_LISTS
+   VERBATIM
+)
