@@ -10,10 +10,10 @@ depend on the Python version and must be built only once per platform.
     python build-slideio.py                  # release, skip if already built
     python build-slideio.py --force          # rebuild even if the prefix exists
     python build-slideio.py --config debug
-    python build-slideio.py --sync-toolchain # match conan profiles to the host compiler
 
-The submodule's conan profiles are used exactly as committed unless
---sync-toolchain is passed; see the comment at that branch for why.
+This script never modifies the submodule's conan profiles. They are checked in
+under extern/slideio/conan/ and are changed by hand, on demand -- see the note
+above the install.py call below.
 """
 
 import argparse
@@ -89,10 +89,6 @@ def main():
                         help='Install prefix (default: extern/slideio-install).')
     parser.add_argument('-f', '--force', action='store_true',
                         help='Rebuild even when the prefix is already up to date.')
-    parser.add_argument('--sync-toolchain', action='store_true',
-                        help="Run the submodule's sync-toolchain.py first, rewriting "
-                             "its conan profiles to match the host compiler. Off by "
-                             "default -- the committed profiles are used as-is.")
     args = parser.parse_args()
 
     check_submodule()
@@ -114,28 +110,24 @@ def main():
 
     print(f"Building slideio {commit[:12]} ({args.config}) into {prefix}")
 
-    if args.sync_toolchain:
-        # sync-toolchain.py rewrites the submodule's conan profiles to name the
-        # host compiler, and on Windows also rewrites the CMake generator string
-        # in its install.py.
-        #
-        # Off by default here, for two reasons. It edits tracked files inside the
-        # submodule, so every build would leave extern/slideio dirty and the next
-        # `git submodule update` would report local changes. And it makes the
-        # build depend on the installed conan knowing the host compiler version:
-        # a host with Apple clang 21 and conan 2.10 fails at the first
-        # `conan install` with "Invalid setting '21.0' ... for
-        # settings.compiler.version", because conan's settings.yml stops at 16.
-        #
-        # The committed profiles are the configuration slideio is tested with.
-        # Conan uses compiler.version to label package IDs, not to select the
-        # compiler -- with -b missing every dependency is compiled by the real
-        # host toolchain either way -- so building against the committed profile
-        # is both reproducible and immune to a newer Xcode appearing.
-        #
-        # Pass --sync-toolchain when you specifically want host-matched package
-        # IDs and your conan is new enough to know the host compiler.
-        run([sys.executable, 'sync-toolchain.py'], cwd=SUBMODULE_DIR)
+    # The conan profiles under extern/slideio/conan/ are used exactly as committed.
+    # This script deliberately does not run the submodule's sync-toolchain.py: a
+    # build must never rewrite them. That script is a setup tool -- run it by hand
+    # when preparing a new machine, or when a toolchain upgrade genuinely calls for
+    # a different profile -- and its result is then reviewed and committed like any
+    # other change.
+    #
+    # Two concrete reasons the build stays out of it. sync-toolchain.py edits
+    # tracked files, so calling it here would leave extern/slideio dirty after every
+    # build. And it writes whatever the host reports, which the installed conan may
+    # not accept: Apple clang 21 with conan 2.10 produces
+    # "Invalid setting '21.0' is not a valid 'settings.compiler.version' value",
+    # because conan's settings.yml stops at 16.
+    #
+    # Note this also means the CMake generator in the submodule's install.py is
+    # whatever is committed there (currently "Visual Studio 17 2022"). If a Windows
+    # machine or CI runner moves to a newer Visual Studio, that line needs updating
+    # in the submodule -- sync-toolchain.py can do it, run manually.
 
     # The submodule's install.py always appends the configuration name to the
     # prefix it is given -- prefix/release, prefix/debug -- whatever -c says.

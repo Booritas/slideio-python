@@ -42,12 +42,26 @@ python -m build
 checked-out submodule commit, so it is safe to call from scripts. `--config debug`
 builds the debug configuration.
 
-The submodule's Conan profiles are used exactly as committed. `--sync-toolchain`
-opts into running its `sync-toolchain.py` first, which rewrites those profiles to
-name the host compiler; it is off by default because it dirties the submodule
-working tree and because a host compiler newer than the installed Conan's
-`settings.yml` (Apple clang 21 against Conan 2.10, for instance) makes
-`conan install` fail outright.
+### Conan profiles are hardcoded
+
+The Conan profiles under `extern/slideio/conan/` are used exactly as committed.
+**No build step ever rewrites them.** They are changed by hand, on demand, and the
+change is reviewed and committed like any other.
+
+The submodule ships `sync-toolchain.py`, which detects the host compiler and
+rewrites `compiler.version` in every profile (and, on Windows, the CMake generator
+string in its `install.py`). Treat it as a **setup tool, not a build step**: run it
+manually when preparing a new machine or when a toolchain upgrade genuinely calls
+for a different profile, then inspect the diff and commit it. `build-slideio.py`
+deliberately never invokes it — a build that mutates tracked files leaves the
+submodule dirty, and the script writes whatever the host reports, which the
+installed Conan may reject (Apple clang 21 against Conan 2.10 fails with
+`Invalid setting '21.0' is not a valid 'settings.compiler.version' value`).
+
+One consequence to keep in mind: the CMake generator in the submodule's
+`install.py` is whatever is committed there — currently `Visual Studio 17 2022`. If
+a Windows machine or CI runner moves to a newer Visual Studio, that line has to be
+updated in the submodule.
 
 Linux wheel builds are intended to run inside the manylinux Docker containers
 (`docker/`, images `booritas/slideio-manylinux_2_28_*`), which ship a prebuilt

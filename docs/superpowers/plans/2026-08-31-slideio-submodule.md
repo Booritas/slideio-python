@@ -1247,16 +1247,25 @@ Changing how a released component's binaries are produced is a build and configu
 Recorded during execution on macOS/arm64, 2026-08-31. Three things the plan did not
 anticipate; each was verified before moving on.
 
-1. **`sync-toolchain.py` is opt-in, not the default.** The plan had
-   `build-slideio.py` always run the submodule's `sync-toolchain.py`. On a host with
-   Apple clang 21 and Conan 2.10.2 that rewrites the profiles to
-   `compiler.version=21.0` and the first `conan install` dies with
+1. **`build-slideio.py` never runs `sync-toolchain.py`.** The plan had it run on
+   every build. On a host with Apple clang 21 and Conan 2.10.2 that rewrites the
+   profiles to `compiler.version=21.0` and the first `conan install` dies with
    `Invalid setting '21.0' is not a valid 'settings.compiler.version' value`
    (Conan's `settings.yml` stops at 16). It also leaves four tracked profile files
-   modified inside the submodule on every build. The flag is now `--sync-toolchain`,
-   off by default; the committed profiles are used as-is. `compiler.version` labels
-   package IDs rather than selecting a compiler, and with `-b missing` every
-   dependency is compiled by the real host toolchain either way.
+   modified inside the submodule on every build.
+
+   Per the project owner's decision: **the Conan profiles are hardcoded in the
+   repository and changed manually, on demand.** No build step may rewrite them.
+   `sync-toolchain.py` is a setup tool — useful for producing a profile on a new
+   machine — and is run by hand, with its diff reviewed and committed like any other
+   change. There is no opt-in flag; the capability is simply not part of the build.
+
+   Skipping it is safe for `compiler.version`, which labels package IDs rather than
+   selecting a compiler: with `-b missing` every dependency is compiled by the real
+   host toolchain either way. The one thing it leaves manual is the CMake generator
+   in the submodule's `install.py` (committed as `Visual Studio 17 2022`), which must
+   be updated in the submodule if a Windows machine or runner moves to a newer
+   Visual Studio.
 
 2. **The submodule's `install.py` always appends the configuration to the prefix.**
    It installs into `<prefix>/release` or `<prefix>/debug` regardless of `-c` — this
