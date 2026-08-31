@@ -60,49 +60,31 @@ To learn more about the library and additional features, visit the [SlideIO Webs
 
 ## Building on Linux with the Manylinux Docker Container
 
-Below are instructions for building the Python wheels within a manylinux environment.
-
-1. **Clone Repositories**  
+1. **Clone the repository with its submodules**
    ```bash
-   git clone https://github.com/Booritas/slideio-python.git
-   git clone https://github.com/Booritas/conan-center-index.git
+   git clone --recurse-submodules https://github.com/Booritas/slideio-python.git
    ```
+   The `--recurse-submodules` is required: the C++ library is the `extern/slideio`
+   submodule and carries four submodules of its own.
 
-2. **Run the Docker Container**  
-   Map the parent directory containing these repositories into the container:
+2. **Run the Docker container**
    ```bash
    docker run --name slideio -it \
-     -v /path-to-slideio-python-parent-directory:/slideio-python/ \
-     booritas/slideio-manylinux_2_28_x86_64:2.7.0 bash
+     -v /path-to-slideio-python:/slideio-python \
+     booritas/slideio-manylinux_2_28_x86_64:2.10.0 bash
    ```
 
-3. **Set Environment Variables**  
-   Within the container, point to the cloned repositories:
+3. **Build the wheels**
    ```bash
-   export SLIDEIO_HOME=/slideio/slideio-python
-   export CONAN_INDEX_HOME=/slideio/conan-center-index
-   ```
-
-4. **Build Custom Conan Packages**  
-   ```bash
-   cd /slideio/slideio-python
-   ./conan.sh
-   ```
-
-5. **Install Conan Dependencies**  
-   ```bash
-   cd /slideio/slideio-python
-   python3 ./install.py -a conan -c release
-   ```
-
-6. **Build Python Wheels**  
-   ```bash
-   cd /slideio/slideio-python
+   cd /slideio-python
    ./build-wheels-manylinux.sh
    ```
+   The script builds the C++ library once with `build-slideio.py`, then builds one
+   wheel per Python version. No Conan remote or credentials are needed — every
+   dependency resolves from conan center, and the image ships them prebuilt.
 
-7. **Locate the Wheel Packages**  
-   You can find the resulting wheel files in the `wheelhouse` subdirectory of the `slideio-python` repository.
+4. **Locate the wheel packages**
+   They are in the `wheelhouse` subdirectory.
 
 ---
 

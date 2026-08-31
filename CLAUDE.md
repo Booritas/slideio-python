@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Python bindings (via pybind11) for the **SlideIO** C++ library — a reader for medical/pathology whole-slide image formats (SVS, CZI, NDPI, DICOM, etc.) that returns image data as NumPy arrays. The C++ library itself lives in a separate repository ([Booritas/slideio](https://github.com/Booritas/slideio)) and is consumed here as a prebuilt Conan package (see `conanfile.txt`, currently `slideio/2.9.0@slideio/stable`) or from a local install via the `SLIDEIO_INSTALL_DIR` environment variable.
+Python bindings (via pybind11) for the **SlideIO** C++ library — a reader for medical/pathology whole-slide image formats (SVS, CZI, NDPI, DICOM, etc.) that returns image data as NumPy arrays. The C++ library itself lives in a separate repository ([Booritas/slideio](https://github.com/Booritas/slideio)) and is consumed here as the `extern/slideio` git submodule, built from source into `extern/slideio-install/` by `build-slideio.py`. Setting `SLIDEIO_INSTALL_DIR` overrides that and points the build at any other slideio install prefix.
 
-`pybind11` is a git submodule — clone with `--recursive` or run `git submodule update --init`.
+Two git submodules: `pybind11` and `extern/slideio`. slideio carries four submodules of its own, so `--recursive` is required, not optional — clone with `--recurse-submodules` or run `git submodule update --init --recursive`.
 
 There is no test suite in this repository; tests live in the main slideio C++ repository.
 
@@ -20,42 +20,57 @@ When adding/changing API: a change usually touches `src/pybind.cpp` (binding), `
 
 ## Build system
 
-`setup.py` defines a `CMakeBuild` extension command that invokes CMake (Visual Studio 17 2022 / x64 on Windows, Makefiles elsewhere). CMake resolves the slideio C++ library in one of two ways:
+`setup.py` defines a `CMakeBuild` extension command that invokes CMake (Visual Studio 17 2022 / x64 on Windows, Makefiles elsewhere). CMake resolves the slideio C++ library from an install prefix — `include/`, `lib/`, `bin/` — in one of two ways:
 
-- **`SLIDEIO_INSTALL_DIR` set** → headers/libs/binaries are taken from that local slideio install (used for developing against a locally built slideio).
-- **Otherwise** → Conan: `find_package(slideio)` with the toolchain at `cmake/conan_toolchain.cmake` (generated into `cmake/` by `install.py -a conan`).
+- **`SLIDEIO_INSTALL_DIR` set** → that prefix is used, for developing against a slideio build outside this repository.
+- **Otherwise** → `extern/slideio-install`, produced by `build-slideio.py` from the `extern/slideio` submodule. Configure fails with an actionable `FATAL_ERROR` if it is absent.
 
-The package version is read from `set(projectVersion MAJOR.MINOR ...)` in `CMakeLists.txt`, with the patch part taken from `CI_PIPELINE_IID` (defaults to `1`).
+There is no Conan step in this repository: slideio is no longer a Conan package here, so no remote, no credentials and no `conanfile.txt`. The submodule's own build still uses Conan for slideio's dependencies — all of which resolve from conan center — but that is internal to `extern/slideio`.
 
-### Typical local build (Windows)
+The package version is read from `set(projectVersion MAJOR.MINOR ...)` in `CMakeLists.txt`, with the patch part taken from `CI_PIPELINE_IID` (defaults to `0`).
 
-```powershell
-# 1. (Once, if the slideio conan package is not available) build it from the
-#    Booritas/conan-center-index fork. Requires $env:CONAN_INDEX_HOME and
-#    $env:SLIDEIO_PYTHON_HOME pointing at the respective repo roots.
-.\build-dependencies.ps1 release   # or: debug
+### Typical local build (any platform)
 
-# 2. Install conan dependencies / generate cmake toolchain into .\cmake
-python install.py -a conan -c release
-
-# 3. Build the extension + wheel
+```bash
+git submodule update --init --recursive   # pybind11 + extern/slideio + its four
+python build-slideio.py                   # once per platform; --force to rebuild
 python -m build
 ```
 
-On Linux/macOS use `./conan.sh` and `python3 install.py -a conan -c release` instead; Linux builds are intended to run inside the manylinux Docker containers (`docker/`, images `booritas/slideio-manylinux_2_28_*`).
+`build-slideio.py` runs the submodule's `install.py -a install` and installs into
+`extern/slideio-install`. It is a no-op when that prefix already matches the
+checked-out submodule commit, so it is safe to call from scripts. `--config debug`
+builds the debug configuration.
 
-`install.py` also supports `-a configure|build|install|clean`; `--clean` wipes the build dir plus generated `CMakeUserPresets.json`/`cmake` dirs.
+The submodule's Conan profiles are used exactly as committed. `--sync-toolchain`
+opts into running its `sync-toolchain.py` first, which rewrites those profiles to
+name the host compiler; it is off by default because it dirties the submodule
+working tree and because a host compiler newer than the installed Conan's
+`settings.yml` (Apple clang 21 against Conan 2.10, for instance) makes
+`conan install` fail outright.
+
+Linux wheel builds are intended to run inside the manylinux Docker containers
+(`docker/`, images `booritas/slideio-manylinux_2_28_*`), which ship a prebuilt
+Conan cache for slideio's dependencies.
 
 ### Multi-version wheel builds
 
+- All three scripts call `build-slideio.py` once before their Python-version loop; the loop itself only ever rebuilds the extension, never the C++ library.
 - `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.8–3.14 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
 - `build-wheels-manylinux.sh`, `build-wheels-macos.sh` + `repair-wheels.sh`/`rename-macos-wheels.sh` for the other platforms.
-- CI: `.github/workflows/{windows,linux,macos}-wheels.yml`, all `workflow_dispatch`-triggered; they optionally rebuild the conan packages from the conan-center-index fork and upload to a private Conan remote.
-
-### Conan profiles
-
-Per-platform profiles live in `conan/{Windows,Linux,OSX}/...` (Windows: `x86_64_release`/`x86_64_debug`; Linux: `ubuntu`/`manylinux`/`s390x`; OSX: `arm`/`x86-64`). `install.py` picks the profile directory automatically from the platform (and `distro`/processor on Linux/macOS).
+- CI: `.github/workflows/{windows,linux,macos}-wheels.yml`, all `workflow_dispatch`-triggered; they check out submodules recursively, cache `~/.conan2`, build the C++ library with `build-slideio.py`, then run the platform's wheel script. No Conan remote and no credentials are involved.
 
 ## Version bumps
 
-The slideio C++ package version appears in several places that must stay in sync: `conanfile.txt` (the `[requires]` line), `build-dependencies.ps1` / `conan.sh` (conan create version; these two are easy to miss and have drifted apart before), and the release branch name (e.g. `2.9.0`). The Python package MAJOR.MINOR comes from `projectVersion` in `CMakeLists.txt`.
+The slideio C++ version is the `extern/slideio` submodule pin — there is nothing
+else to keep in sync. Bump it with:
+
+```bash
+git -C extern/slideio fetch origin
+git -C extern/slideio checkout <tag-or-sha>
+git add extern/slideio
+python build-slideio.py --force
+```
+
+The Python package MAJOR.MINOR comes from `projectVersion` in `CMakeLists.txt`
+and should track the C++ version it is pinned to.
