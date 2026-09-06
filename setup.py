@@ -25,7 +25,7 @@ def _read_cmake_version():
     raise RuntimeError("Could not determine version from CMakeLists.txt")
 
 _base_version = _read_cmake_version()
-vrs_sub = '1'
+vrs_sub = '2'
 
 if os.environ.get('CI_PIPELINE_IID'):
     ci_id = os.environ['CI_PIPELINE_IID']
