@@ -146,6 +146,14 @@ class Scene(object):
         '''Get raw metadata of the scene'''
         return self.scene.get_raw_metadata()
 
+    def get_color_profile(self):
+        '''Raw ICC profile bytes embedded in the scene, or None if it carries none.'''
+        return self.scene.get_color_profile()
+
+    def get_color_profile_info(self):
+        '''Parsed ICC header of the scene colour profile, as a ColorProfileInfo.'''
+        return self.scene.get_color_profile_info()
+
     def get_aux_image(self, image_name, size=(0,0), channel_indices=None):
         '''Get auxiliary image as a numpy array.
 
