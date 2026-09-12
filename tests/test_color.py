@@ -78,5 +78,73 @@ class TestColor(unittest.TestCase):
                 slideio.transform_scene(scene, [cm])
 
 
+    def test_source_profile_override_makes_an_unprofiled_scene_convertible(self):
+        # The spec declines to ship a vendor fallback profile table on the
+        # grounds that source_profile_override "is the honest substitute: a lab
+        # that has actually characterised its scanner supplies the profile and
+        # owns the claim". That substitute has to exist in Python, which is
+        # where the ML pipelines this feature is for actually live.
+        path = get_test_image_path("gdal", "img_2448x2448_3x8bit_SRC_RGB_ducks.png")
+        profiled = get_test_image_path("gdal", "colors.png")
+        with slideio.open_slide(profiled, "AUTO") as donor:
+            icc = donor.get_scene(0).get_color_profile()
+        self.assertIsInstance(icc, bytes)
+
+        with slideio.open_slide(path, "AUTO") as slide:
+            scene = slide.get_scene(0)
+            self.assertIsNone(scene.get_color_profile())
+
+            # Without an override, FAIL is the whole point: no colorimetry.
+            strict = slideio.ColorManagement()
+            strict.target = slideio.ColorTarget.LAB
+            strict.missing_profile_policy = slideio.MissingProfilePolicy.FAIL
+            with self.assertRaises(RuntimeError):
+                slideio.transform_scene(scene, [strict])
+
+            # With one, the same strict policy converts, because a real profile
+            # was supplied rather than assumed.
+            supplied = slideio.ColorManagement()
+            supplied.target = slideio.ColorTarget.LAB
+            supplied.missing_profile_policy = slideio.MissingProfilePolicy.FAIL
+            supplied.source_profile_override = icc
+            self.assertEqual(supplied.source_profile_override, icc)
+            managed = slideio.transform_scene(scene, [supplied])
+            info = managed.get_color_profile_info()
+            self.assertTrue(info.present)
+            self.assertEqual(info.source, slideio.ColorProfileSource.EMBEDDED)
+            self.assertEqual(info.size, len(icc))
+            tile = managed.read_block((0, 0, 16, 16), size=(16, 16))
+            self.assertEqual(tile.dtype.name, "float32")
+
+    def test_source_profile_override_round_trips_and_clears(self):
+        cm = slideio.ColorManagement()
+        self.assertIsNone(cm.source_profile_override)
+        cm.source_profile_override = b"not a real profile"
+        self.assertEqual(cm.source_profile_override, b"not a real profile")
+        cm.source_profile_override = None
+        self.assertIsNone(cm.source_profile_override)
+        with self.assertRaises(TypeError):
+            cm.source_profile_override = "a str is not ICC bytes"
+
+    def test_new_enums_do_not_shadow_colorspace_in_the_extension_namespace(self):
+        # export_values() drops every member into the extension module's own
+        # namespace. IccColorSpace exports GRAY/RGB/XYZ and ColorTarget exports
+        # XYZ, which silently rebound the names the pre-existing ColorSpace
+        # enum had already put there -- so a bare GRAY meant IccColorSpace.Gray,
+        # not ColorSpace.GRAY. The new enums are reachable through their own
+        # type instead, which is the clearer form anyway.
+        from slideio.core.libs import slideiopybind as ext
+
+        self.assertIs(ext.GRAY, ext.ColorSpace.GRAY)
+        self.assertIs(ext.XYZ, ext.ColorSpace.XYZ)
+        for name in ("SRGB", "LINEAR_RGB", "EMBEDDED", "ASSUMED", "PERCEPTUAL",
+                     "CMYK", "YCBCR", "ASSUME_SRGB", "PASS_THROUGH", "FAIL"):
+            self.assertFalse(hasattr(ext, name),
+                             f"{name} leaked into the extension namespace")
+        self.assertIsNotNone(slideio.IccColorSpace.RGB)
+        self.assertIsNotNone(slideio.ColorTarget.XYZ)
+        self.assertIsNotNone(slideio.MissingProfilePolicy.FAIL)
+
+
 if __name__ == "__main__":
     unittest.main()
