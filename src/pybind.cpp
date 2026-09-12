@@ -232,7 +232,8 @@ PYBIND11_MODULE(slideiopybind, m) {
     py::enum_<slideio::ColorProfileSource>(m, "ColorProfileSource")
         .value("NONE", slideio::ColorProfileSource::None)
         .value("EMBEDDED", slideio::ColorProfileSource::Embedded)
-        .value("ASSUMED", slideio::ColorProfileSource::Assumed);
+        .value("ASSUMED", slideio::ColorProfileSource::Assumed)
+        .value("SUPPLIED", slideio::ColorProfileSource::Supplied);
     py::enum_<slideio::RenderingIntent>(m, "RenderingIntent")
         .value("PERCEPTUAL", slideio::RenderingIntent::Perceptual)
         .value("RELATIVE_COLORIMETRIC", slideio::RenderingIntent::RelativeColorimetric)

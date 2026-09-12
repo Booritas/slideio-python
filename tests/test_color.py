@@ -111,7 +111,11 @@ class TestColor(unittest.TestCase):
             managed = slideio.transform_scene(scene, [supplied])
             info = managed.get_color_profile_info()
             self.assertTrue(info.present)
-            self.assertEqual(info.source, slideio.ColorProfileSource.EMBEDDED)
+            # SUPPLIED, not EMBEDDED: this scene's file carries no profile, and
+            # reporting one as embedded would misstate where the colorimetry came
+            # from -- the distinction an audit trail exists to record.
+            self.assertEqual(info.source, slideio.ColorProfileSource.SUPPLIED)
+            self.assertNotEqual(info.source, slideio.ColorProfileSource.EMBEDDED)
             self.assertEqual(info.size, len(icc))
             tile = managed.read_block((0, 0, 16, 16), size=(16, 16))
             self.assertEqual(tile.dtype.name, "float32")
