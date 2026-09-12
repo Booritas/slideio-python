@@ -1,5 +1,5 @@
 #!/bin/bash
-min_version=7
+min_version=9
 max_version=14
 
 build_wheel()
@@ -19,7 +19,10 @@ build_wheel()
     $py -m pip install -U pip setuptools
     $py -m pip install wheel
     $py -m pip install build
-    $py -m build
+    # --wheel: build from the work tree. A bare `$py -m build` builds the wheel
+    # from an unpacked sdist in a temp dir, and the sdist ships no extern/, so
+    # CMake finds no extern/slideio-install there and fails.
+    $py -m build --wheel
     #$py setup.py sdist bdist_wheel
 
     echo "-------------End of processing Python version: $py_version ---------------"

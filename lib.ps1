@@ -158,7 +158,23 @@ function Build-Wheels {
         # "ImportError: DLL load failed while importing pyexpat".
         # The build backend deps (setuptools>=61, wheel) are already installed
         # in the conda env above, so isolation is unnecessary.
-        python -m build --no-isolation
+        #
+        # --wheel: build the wheel from the work tree. A bare `python -m build`
+        # builds an sdist first and then builds the wheel from the *unpacked
+        # sdist* in a temp directory. The sdist ships no extern/ at all
+        # (MANIFEST.in carries neither the slideio install prefix nor the
+        # submodule), so CMAKE_CURRENT_SOURCE_DIR there has no
+        # extern/slideio-install and configure dies with the FATAL_ERROR from
+        # CMakeLists.txt. The prefix build-slideio.py produced only exists here.
+        python -m build --wheel --no-isolation
+        # $ErrorActionPreference = "Stop" does not apply to native exit codes,
+        # so without this the loop swallows a failed build, tears the env down
+        # and moves on to the next version -- the failure only shows up as
+        # missing wheels at the end. Throw here instead; the conda env is left
+        # in place on purpose so the failure can be reproduced by hand.
+        if ($LASTEXITCODE -ne 0) {
+            throw "python -m build failed for Python $version (exit $LASTEXITCODE); conda env env_python_$version kept for debugging"
+        }
         Get-ChildItem -Path .\dist
         Deactivate-CondaEnv
         Remove-CondaEnv -version $version
