@@ -118,7 +118,47 @@ ENDIF()
 # Stage the slideio runtime next to the extension so setup.py can collect both
 # into slideio/core/libs. Globbed at configure time: re-run cmake after
 # rebuilding the submodule if the set of libraries changed.
-file(GLOB SLIDEIO_BIN_FILES ${SLIDEIO_INSTALL_DIR}/bin/*.*)
+#
+# Both directories, because the platforms disagree about which one holds the
+# runtime. Windows installs the DLLs to bin/ and the import libraries to lib/;
+# Linux and macOS install the shared objects to lib/ alone. slideio used to
+# install them to lib/ *and* bin/ on Unix, so naming bin/ here was enough -- when
+# that duplicate was removed this glob came back empty and the copy below failed
+# with "cmake -E copy must be called with at least two arguments", which says
+# nothing about the cause.
+file(GLOB _slideio_staged
+    ${SLIDEIO_INSTALL_DIR}/bin/*.*
+    ${SLIDEIO_INSTALL_DIR}/lib/*.so*
+    ${SLIDEIO_INSTALL_DIR}/lib/*.dylib)
+
+# Drop the unversioned SONAME symlinks. Since slideio began setting
+# VERSION/SOVERSION on Linux, every library matches "*.so*" twice --
+# libslideio.so.2.10 and a libslideio.so pointing at it -- and `cmake -E copy`
+# below follows symlinks, so staging both would put two full copies of all
+# sixteen libraries in the wheel. Only the versioned file is wanted: the
+# extension records the SONAME at link time, so that is the name the loader asks
+# for, and the unversioned link exists for the linker, which the wheel never
+# runs. Filtered here and not in setup.py because after the copy these are
+# ordinary files and nothing downstream can tell them apart.
+set(SLIDEIO_BIN_FILES "")
+foreach(_lib IN LISTS _slideio_staged)
+    if(IS_SYMLINK "${_lib}")
+        message(STATUS "slideio runtime: skipping SONAME symlink ${_lib}")
+    else()
+        list(APPEND SLIDEIO_BIN_FILES "${_lib}")
+    endif()
+endforeach()
+unset(_slideio_staged)
+
+# An empty glob is always a broken install prefix, and it is worth saying so
+# here rather than letting it surface as a malformed copy command at build time.
+if(NOT SLIDEIO_BIN_FILES)
+    message(FATAL_ERROR
+        "No slideio runtime libraries found under ${SLIDEIO_INSTALL_DIR} "
+        "(looked in bin/ and lib/). Build the C++ library first with "
+        "'python build-slideio.py', or point SLIDEIO_INSTALL_DIR at a complete "
+        "slideio install prefix.")
+endif()
 add_custom_command(TARGET ${LIBRARY_NAME} PRE_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy
    ${SLIDEIO_BIN_FILES}
