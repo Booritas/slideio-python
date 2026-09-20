@@ -13,9 +13,24 @@ Almost every test lives in the main slideio C++ repository. The exception is
 currently the colour API, where the question is what a Python caller sees rather
 than what the C++ library computes. It needs a built wheel (or an installed
 `slideio`) and `SLIDEIO_IMAGES_PATH` pointing at the shared image corpus; run it
-with `pytest tests`. `SLIDEIO_SKIP_MISSING_IMAGES` turns a missing image into a
-skip, which is for local runs only — CI must leave it unset so coverage cannot
-disappear quietly.
+with `pytest tests`. Pillow is a test dependency, not an optional extra:
+`test_color.py` round-trips the raw ICC bytes through `PIL.ImageCms` to prove
+they are a real profile rather than merely non-empty. `SLIDEIO_SKIP_MISSING_IMAGES`
+turns a missing image into a skip, which is for local runs only — CI must leave
+it unset so coverage cannot disappear quietly. Only `0`, `false`, `no` and `off`
+count as "not set"; anything else enables skipping.
+
+Run the suite from outside the checkout when testing an installed wheel. The
+repository root holds a `slideio/` package directory whose `core/libs/` a local
+build populates, and `import slideio` from there resolves to that source tree
+rather than to site-packages — which silently tests whatever the last local
+build left behind. The CI steps below `cd` away for this reason.
+
+Each wheel workflow ends with a step that installs the built wheel into a clean
+environment and runs `tests/` against it. The step is gated on the
+`SLIDEIO_IMAGES_PATH` repository variable, since without the corpus there is
+nothing to read: set it to enable the step, and on Linux to a path visible
+inside the manylinux container.
 
 ## Architecture: three layers
 

@@ -74,6 +74,31 @@ jobs:
         ./build-wheels-macos.sh
         ./rename-macos-wheels.sh ./dist
 
+    - name: test the built wheel
+      # tests/ covers the parts that exist only on the Python side of the
+      # binding -- everything else is tested in the C++ repository -- and it
+      # needs the shared image corpus. Set the SLIDEIO_IMAGES_PATH repository
+      # variable to enable the step; with nothing to read there is nothing to
+      # test, so it is skipped. SLIDEIO_SKIP_MISSING_IMAGES stays unset on
+      # purpose: in CI a missing image must fail the run, not quietly skip the
+      # test that needed it.
+      if: vars.SLIDEIO_IMAGES_PATH != ''
+      shell: bash -el {0}
+      env:
+        SLIDEIO_IMAGES_PATH: ${{ vars.SLIDEIO_IMAGES_PATH }}
+      run: |
+        conda create -n wheeltest python=3.12 -y
+        conda activate wheeltest
+        python -m pip install pytest pillow numpy
+        # The renamed wheel, not the work tree: this tests what ships.
+        python -m pip install --no-index \
+          --find-links "$GITHUB_WORKSPACE/slideio/dist" slideio
+        # Run from outside the checkout so `import slideio` resolves to the
+        # installed wheel and not to the source directory beside it.
+        cd "$RUNNER_TEMP"
+        python -m pytest "$GITHUB_WORKSPACE/slideio/tests"
+        conda deactivate
+
     - uses: actions/upload-artifact@v4
       with:
         path: ./slideio/dist/*.whl

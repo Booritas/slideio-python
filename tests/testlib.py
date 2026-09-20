@@ -15,9 +15,18 @@ _IMAGES_PATH_VAR = "SLIDEIO_IMAGES_PATH"
 _SKIP_MISSING_VAR = "SLIDEIO_SKIP_MISSING_IMAGES"
 
 
+# Spellings that mean "not set" when someone sets the variable anyway. Without
+# these, SLIDEIO_SKIP_MISSING_IMAGES=false enables skipping -- the exact quiet
+# loss of coverage this module exists to prevent, triggered by a CI author
+# spelling out the default to be explicit.
+_FALSE_VALUES = frozenset({"", "0", "false", "no", "off"})
+
+
 def _skips_missing_images():
     value = os.environ.get(_SKIP_MISSING_VAR)
-    return bool(value) and value != "0"
+    if value is None:
+        return False
+    return value.strip().lower() not in _FALSE_VALUES
 
 
 def get_test_image_path(subfolder, image):

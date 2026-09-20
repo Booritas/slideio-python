@@ -104,9 +104,21 @@ class CMakeBuild(build_ext):
             self.build_temp = ext.build_dir
         extdir = os.path.abspath(os.path.dirname(
             self.get_ext_fullpath(ext.name)))
+        # Where CMake writes the extension and stages the slideio runtime --
+        # deliberately not extdir. extdir is the wheel's build_lib root, and
+        # bdist_wheel packages whatever it finds there, so pointing
+        # CMAKE_LIBRARY_OUTPUT_DIRECTORY at it put a second copy of every
+        # libslideio*.so/.dylib, plus the extension itself, into the wheel
+        # *root* on Linux and macOS -- beside the slideio package and on top of
+        # the copies staged under slideio/core/libs. Windows never showed it: a
+        # SHARED library's DLL is a RUNTIME artifact there and its import
+        # library an ARCHIVE one, so neither followed that variable. Everything
+        # the wheel gets is copied out of this directory below, by name.
+        cmake_out_dir = os.path.join(self.build_temp, 'runtime')
         print(f"----Python executable: {sys.executable}")
         cmake_args = [
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + cmake_out_dir,
+            '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + cmake_out_dir,
             '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
 
@@ -114,9 +126,14 @@ class CMakeBuild(build_ext):
         build_args = ['--config', cfg, "--target", "slideiopybind"]
 
         if platform.system() == "Windows":
+            # Visual Studio is a multi-config generator: without the per-config
+            # variables it appends a Release/ subdirectory of its own.
             cmake_args += [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
-                    cfg.upper(), extdir
+                    cfg.upper(), cmake_out_dir
+                ),
+                '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{}={}'.format(
+                    cfg.upper(), cmake_out_dir
                 )
             ]
             if sys.maxsize > 2**32:
@@ -151,23 +168,25 @@ class CMakeBuild(build_ext):
             patterns = ["*.so", "*.dylib"]
 
         wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
-        staged_prefix = os.path.abspath(wheel_lib_dir) + os.sep
 
-        print("----Look for shared libraries int directory", self.build_temp)
+        # Only cmake_out_dir, not the whole build tree: it holds exactly the
+        # extension and the runtime CMake staged beside it, and it lies outside
+        # extdir, so nothing collected here is already part of the wheel.
+        print("----Look for shared libraries in directory", cmake_out_dir)
         extra_files = []
         for pattern in patterns:
-            for fl in find_shared_libs(self.build_temp, pattern):
-                # Skip anything already inside the staging directory. build_temp
-                # contains wheel_lib_dir, so a rebuild in a warm tree rediscovers
-                # the libraries the previous run staged and would try to copy each
-                # onto itself. shutil.move used to hide this -- renaming a path
-                # onto itself is a silent no-op -- but such an entry is a leftover,
-                # not a build product.
-                if os.path.abspath(fl).startswith(staged_prefix):
-                    continue
-                extra_files.append(fl)
+            extra_files.extend(find_shared_libs(cmake_out_dir, pattern))
 
         print("----Found libraries:", extra_files)
+
+        # An empty result means the build produced nothing to ship, and a wheel
+        # missing its extension fails at import rather than here, which is a far
+        # worse place to find out.
+        if not extra_files:
+            raise RuntimeError(
+                "No shared libraries found in {} after building the extension "
+                "(looked for {}).".format(cmake_out_dir, ", ".join(patterns))
+            )
 
         if os.path.exists(wheel_lib_dir):
             shutil.rmtree(wheel_lib_dir)

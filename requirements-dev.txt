@@ -2,3 +2,6 @@ autopep8
 pylint
 pytest
 numpy
+# tests/test_color.py round-trips the raw ICC bytes through an external
+# consumer to prove they are a real profile, not just non-empty.
+pillow

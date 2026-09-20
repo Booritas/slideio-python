@@ -34,7 +34,7 @@ Documentation = "http://slideio.com"
 "Source Code" = "https://github.com/Booritas/slideio"
 
 [project.optional-dependencies]
-dev = ["autopep8", "pylint", "pytest", "numpy"]
+dev = ["autopep8", "pylint", "pytest", "numpy", "pillow"]
 
 [tool.setuptools.packages.find]
 where = ["."]

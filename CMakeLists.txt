@@ -141,24 +141,60 @@ file(GLOB _slideio_staged
     ${SLIDEIO_INSTALL_DIR}/lib/*.so*
     ${SLIDEIO_INSTALL_DIR}/lib/*.dylib)
 
-# Drop the unversioned SONAME symlinks. Since slideio began setting
-# VERSION/SOVERSION on Linux, every library matches "*.so*" twice --
-# libslideio.so.2.10 and a libslideio.so pointing at it -- and `cmake -E copy`
-# below follows symlinks, so staging both would put two full copies of all
-# sixteen libraries in the wheel. Only the versioned file is wanted: the
-# extension records the SONAME at link time, so that is the name the loader asks
-# for, and the unversioned link exists for the linker, which the wheel never
-# runs. Filtered here and not in setup.py because after the copy these are
-# ordinary files and nothing downstream can tell them apart.
+# Stage one file per library, under the name the loader will ask for.
+#
+# Since slideio began setting VERSION/SOVERSION on Linux, each library matches
+# "*.so*" more than once -- libslideio.so.2.10 and a libslideio.so pointing at
+# it -- and `cmake -E copy` follows symlinks, so staging every match would put
+# two full copies of all sixteen libraries in the wheel. What must survive the
+# filter is the SONAME entry: the extension records the SONAME at link time, so
+# that is the name the loader looks for at import. The unversioned link exists
+# for the linker, which the wheel never runs.
+#
+# Today SONAME and VERSION are the same string (2.10), so the SONAME entry is
+# the real file and only the unversioned link is redundant. That is a property
+# of the submodule, not a rule: under the conventional split (SOVERSION 2,
+# VERSION 2.10.0) the SONAME entry libslideio.so.2 is itself a symlink, and
+# dropping links wholesale would ship a wheel whose libraries are all present
+# under names nothing asks for -- an import failure with no build-time warning.
+#
+# So: drop only the unversioned development link, keep every versioned entry,
+# and where a kept link and a real file are the same library keep just the link
+# -- copied by content, under the link's own name, which is the SONAME.
 set(SLIDEIO_BIN_FILES "")
+set(_slideio_covered "")
 foreach(_lib IN LISTS _slideio_staged)
     if(IS_SYMLINK "${_lib}")
-        message(STATUS "slideio runtime: skipping SONAME symlink ${_lib}")
-    else()
-        list(APPEND SLIDEIO_BIN_FILES "${_lib}")
+        get_filename_component(_name "${_lib}" NAME)
+        # Unversioned: "libfoo.so", or a .dylib with no numeric version before
+        # the extension. A versioned link is a SONAME entry and is kept.
+        if(_name MATCHES "\\.so$"
+           OR (_name MATCHES "\\.dylib$"
+               AND NOT _name MATCHES "\\.[0-9]+(\\.[0-9]+)*\\.dylib$"))
+            message(STATUS
+                "slideio runtime: skipping unversioned link ${_lib}")
+        else()
+            get_filename_component(_real "${_lib}" REALPATH)
+            message(STATUS
+                "slideio runtime: staging SONAME link ${_name} -> ${_real}")
+            list(APPEND SLIDEIO_BIN_FILES "${_lib}")
+            list(APPEND _slideio_covered "${_real}")
+        endif()
+    endif()
+endforeach()
+foreach(_lib IN LISTS _slideio_staged)
+    if(NOT IS_SYMLINK "${_lib}")
+        get_filename_component(_real "${_lib}" REALPATH)
+        if(_real IN_LIST _slideio_covered)
+            # A versioned link already stages this file under the SONAME.
+            message(STATUS "slideio runtime: skipping aliased file ${_lib}")
+        else()
+            list(APPEND SLIDEIO_BIN_FILES "${_lib}")
+        endif()
     endif()
 endforeach()
 unset(_slideio_staged)
+unset(_slideio_covered)
 
 # An empty glob is always a broken install prefix, and it is worth saying so
 # here rather than letting it surface as a malformed copy command at build time.
