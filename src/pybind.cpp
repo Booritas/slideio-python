@@ -303,10 +303,12 @@ PYBIND11_MODULE(slideiopybind, m) {
                           }
                           const std::string raw = value.cast<std::string>();
                           std::vector<uint8_t> data(raw.begin(), raw.end());
-                          // ColorProfile marks non-empty bytes Embedded, which is the
-                          // honest label here: a supplied characterisation is a real
-                          // profile somebody owns the claim for, not the sRGB guess
-                          // MissingProfilePolicy.ASSUME_SRGB stands for.
+                          // ColorProfile stamps non-empty bytes Embedded and nothing
+                          // here corrects that, because ColorManagement does it
+                          // itself: on bind it restamps a valid override Supplied,
+                          // whatever provenance the bytes arrived with. Leaving the
+                          // label to the one place that knows the profile did not
+                          // come out of the file keeps the two from disagreeing.
                           self.setSourceProfileOverride(slideio::ColorProfile(std::move(data)));
                       },
                       "Raw ICC profile bytes to convert from, overriding whatever the"

@@ -8,7 +8,14 @@ Python bindings (via pybind11) for the **SlideIO** C++ library — a reader for 
 
 Two git submodules: `pybind11` and `extern/slideio`. slideio carries four submodules of its own, so `--recursive` is required, not optional — clone with `--recurse-submodules` or run `git submodule update --init --recursive`.
 
-There is no test suite in this repository; tests live in the main slideio C++ repository.
+Almost every test lives in the main slideio C++ repository. The exception is
+`tests/`, which covers the parts that exist only on this side of the binding —
+currently the colour API, where the question is what a Python caller sees rather
+than what the C++ library computes. It needs a built wheel (or an installed
+`slideio`) and `SLIDEIO_IMAGES_PATH` pointing at the shared image corpus; run it
+with `pytest tests`. `SLIDEIO_SKIP_MISSING_IMAGES` turns a missing image into a
+skip, which is for local runs only — CI must leave it unset so coverage cannot
+disappear quietly.
 
 ## Architecture: three layers
 
@@ -26,6 +33,20 @@ When adding/changing API: a change usually touches `src/pybind.cpp` (binding), `
 - **Otherwise** → `extern/slideio-install`, produced by `build-slideio.py` from the `extern/slideio` submodule. Configure fails with an actionable `FATAL_ERROR` if it is absent.
 
 There is no Conan step in this repository: slideio is no longer a Conan package here, so no remote, no credentials and no `conanfile.txt`. The submodule's own build still uses Conan for slideio's dependencies — all of which resolve from conan center — but that is internal to `extern/slideio`.
+
+slideio 2.10 added one dependency to that set, `lcms/2.16`, which backs the ICC
+parsing and colour conversion behind `Scene.get_color_profile_info()` and the
+`ColorManagement` transformation. Nothing here names it, but a Conan cache
+populated before 2.10 — a CI cache hit, a manylinux image built against an
+earlier tag — does not carry it and will build it from source on the first run.
+
+The install prefix is no longer just the runtime, either. `install.py` runs a
+plain `cmake --install`, which installs every CPack component, so since 2.10
+`bin/` also holds the command line tools (`slideio-converter`,
+`slideio-tiffinspector`) and, on MSVC, a `.pdb` beside every library. Only the
+shared libraries belong in the wheel: the glob in `CMakeLists.txt` that stages
+the runtime selects them by extension for that reason, and anything added there
+should keep doing so rather than copying `bin/` wholesale.
 
 The package version is read from `set(projectVersion MAJOR.MINOR ...)` in `CMakeLists.txt`, with the patch part taken from `CI_PIPELINE_IID` (defaults to `0`).
 

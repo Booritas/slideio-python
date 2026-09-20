@@ -126,8 +126,18 @@ ENDIF()
 # that duplicate was removed this glob came back empty and the copy below failed
 # with "cmake -E copy must be called with at least two arguments", which says
 # nothing about the cause.
+#
+# Shared libraries by extension, not "everything in bin/". Since slideio 2.10
+# bin/ holds more than the runtime: the Tools component installs the command
+# line tools there (slideio-converter, slideio-tiffinspector) and, on MSVC, the
+# DebugSymbols component installs a .pdb beside every library. Both arrive
+# unasked -- install.py runs a plain `cmake --install`, which installs every
+# component -- so the prefix is no longer a directory whose contents can be
+# copied wholesale. setup.py would filter the tools and PDBs back out when it
+# collects the wheel, so nothing shipped, but the staging copy below still moved
+# several hundred megabytes of debug symbols on every configure.
 file(GLOB _slideio_staged
-    ${SLIDEIO_INSTALL_DIR}/bin/*.*
+    ${SLIDEIO_INSTALL_DIR}/bin/*.dll
     ${SLIDEIO_INSTALL_DIR}/lib/*.so*
     ${SLIDEIO_INSTALL_DIR}/lib/*.dylib)
 
