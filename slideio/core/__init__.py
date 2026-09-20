@@ -14,6 +14,13 @@ from .libs.slideiopybind import (
     DataType,
     BilateralFilter,
     CannyFilter,
+    ColorManagement,
+    ColorProfileInfo,
+    ColorTarget,
+    ColorProfileSource,
+    RenderingIntent,
+    IccColorSpace,
+    MissingProfilePolicy,
 )
 
 from .libs.slideiopybind import (
@@ -45,6 +52,13 @@ __all__ = [
     "LaplacianFilter",
     "BilateralFilter",
     "CannyFilter",
+    "ColorManagement",
+    "ColorProfileInfo",
+    "ColorTarget",
+    "ColorProfileSource",
+    "RenderingIntent",
+    "IccColorSpace",
+    "MissingProfilePolicy",
     # internal aliases used by the wrappers layer (not part of the public API)
     "CoreSlide",
     "CoreScene",

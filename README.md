@@ -58,51 +58,162 @@ To learn more about the library and additional features, visit the [SlideIO Webs
 
 ---
 
-## Building on Linux with the Manylinux Docker Container
+## Building from source
 
-Below are instructions for building the Python wheels within a manylinux environment.
+The C++ **SlideIO** library is not downloaded as a prebuilt package. It is the
+`extern/slideio` git submodule and is compiled from source into a local install
+prefix, which the Python extension then links against.
 
-1. **Clone Repositories**  
-   ```bash
-   git clone https://github.com/Booritas/slideio-python.git
-   git clone https://github.com/Booritas/conan-center-index.git
-   ```
+**[Conan 2](https://conan.io) must be installed to build it.** slideio depends on
+OpenCV, DCMTK, libtiff, ICU and around a dozen other C++ libraries, and Conan is
+what resolves and builds them. Install it with `pip install conan`.
 
-2. **Run the Docker Container**  
-   Map the parent directory containing these repositories into the container:
-   ```bash
-   docker run --name slideio -it \
-     -v /path-to-slideio-python-parent-directory:/slideio-python/ \
-     booritas/slideio-manylinux_2_28_x86_64:2.7.0 bash
-   ```
+Every dependency resolves from the public [conan center](https://conan.io/center), and
+the few that do not live there are submodules of the slideio repository. Conan is
+used only for the C++ library — building the Python extension itself involves no
+Conan step at all.
 
-3. **Set Environment Variables**  
-   Within the container, point to the cloned repositories:
-   ```bash
-   export SLIDEIO_HOME=/slideio/slideio-python
-   export CONAN_INDEX_HOME=/slideio/conan-center-index
-   ```
+### Prerequisites
 
-4. **Build Custom Conan Packages**  
-   ```bash
-   cd /slideio/slideio-python
-   ./conan.sh
-   ```
+| Requirement | Notes |
+|---|---|
+| Git | Submodules are required, see below |
+| CMake 3.10+ | |
+| A C++17 compiler | GCC, Clang, or Visual Studio 2022 on Windows |
+| Python 3.9+ | Wheels are published for 3.9–3.14; pybind11 3.1 sets the 3.9 floor |
+| **[Conan 2](https://conan.io)** | **Required** to build the C++ library: `pip install conan` |
+| `distro` | Linux only: `pip install distro` |
+| `build` | `pip install build` — only if you want a wheel rather than an install |
 
-5. **Install Conan Dependencies**  
-   ```bash
-   cd /slideio/slideio-python
-   python3 ./install.py -a conan -c release
-   ```
+### 1. Clone with submodules
 
-6. **Build Python Wheels**  
-   ```bash
-   cd /slideio/slideio-python
-   ./build-wheels-manylinux.sh
-   ```
+```bash
+git clone --recurse-submodules https://github.com/Booritas/slideio-python.git
+cd slideio-python
+```
 
-7. **Locate the Wheel Packages**  
-   You can find the resulting wheel files in the `wheelhouse` subdirectory of the `slideio-python` repository.
+`--recurse-submodules` is not optional. There are two submodules — `pybind11` and
+`extern/slideio` — and slideio carries four of its own. In an existing clone:
+
+```bash
+git submodule update --init --recursive
+```
+
+### 2. Build the C++ library
+
+This is the step that needs Conan. Make sure it is installed first:
+
+```bash
+pip install conan          # plus: pip install distro   (Linux only)
+conan --version            # Conan 2.x
+```
+
+Then:
+
+```bash
+python build-slideio.py
+```
+
+This builds the `extern/slideio` submodule and installs it into
+`extern/slideio-install/` (`include/`, `lib/`, `bin/`). Conan resolves slideio's
+C++ dependencies from conan center and builds whatever is missing, then CMake
+builds slideio itself. The first run compiles the whole dependency graph from
+source and takes a while; later runs reuse the Conan cache in `~/.conan2`.
+
+| Option | Effect |
+|---|---|
+| *(none)* | Release build; does nothing if the prefix already matches the checked-out submodule commit |
+| `--force` | Rebuild and reinstall even when the prefix is up to date |
+| `--config debug` | Build the debug configuration instead |
+| `--prefix PATH` | Install somewhere other than `extern/slideio-install` |
+
+Because the library does not depend on the Python version, it only has to be built
+once per machine — the wheel scripts below call this script themselves and it is a
+no-op after the first time.
+
+### 3. Build the Python package
+
+To install into the current environment:
+
+```bash
+pip install .
+```
+
+To produce a wheel in `dist/` instead:
+
+```bash
+python -m build --wheel
+```
+
+Either way CMake compiles the `slideiopybind` extension, and the slideio shared
+libraries are copied into the package as `slideio/core/libs/`, so the resulting
+wheel is self-contained.
+
+### Building wheels for every supported Python version
+
+Each platform has a script that loops over a range of Python versions, building one
+wheel per version — 3.9–3.14 on macOS, Windows and manylinux (3.13 is the cap on
+macOS Intel). They build the C++ library once up front, then rebuild only
+the extension per version.
+
+```bash
+./build-wheels-macos.sh        # macOS, needs conda
+./build-wheels-manylinux.sh    # Linux, intended for the manylinux container
+```
+
+```powershell
+.\build-wheels-win.ps1         # Windows, needs conda
+```
+
+macOS wheels are then renamed with `./rename-macos-wheels.sh ./dist`; Linux wheels
+are repaired by `auditwheel` inside `build-wheels-manylinux.sh` and land in
+`wheelhouse/`.
+
+### Building on Linux with the manylinux Docker container
+
+The container already carries the toolchain and a prebuilt Conan cache, so the
+build goes straight to compiling slideio itself.
+
+```bash
+git clone --recurse-submodules https://github.com/Booritas/slideio-python.git
+
+docker run --name slideio -it \
+  -v "$(pwd)/slideio-python:/slideio-python" \
+  booritas/slideio-manylinux_2_28_x86_64:2.10.0 bash
+
+cd /slideio-python
+./build-wheels-manylinux.sh
+```
+
+The wheels end up in the `wheelhouse` subdirectory.
+
+### Building against a slideio checkout outside this repository
+
+To develop against your own slideio build rather than the submodule, point
+`SLIDEIO_INSTALL_DIR` at its install prefix. It takes precedence over
+`extern/slideio-install`, and `build-slideio.py` is then not needed at all.
+
+```bash
+export SLIDEIO_INSTALL_DIR=/path/to/slideio/install    # must contain include/ lib/ bin/
+pip install .
+```
+
+### Conan profiles
+
+The Conan profiles live in the submodule, under `extern/slideio/conan/<platform>/`,
+and are used exactly as committed — **no build step rewrites them**. If your
+compiler is not the one a profile names, edit the profile deliberately and commit
+the change.
+
+The slideio repository ships `sync-toolchain.py`, which detects the host compiler
+and rewrites `compiler.version` in every profile (and, on Windows, the CMake
+generator in its `install.py`). It is a setup tool for preparing a new machine, not
+part of the build: run it by hand from `extern/slideio`, check the diff, and commit
+it.
+
+```bash
+cd extern/slideio && python sync-toolchain.py && git diff conan/
+```
 
 ---
 

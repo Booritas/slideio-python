@@ -3,6 +3,7 @@
 // of this distribution and at http://slideio.com/license.html.
 #pragma once
 #include "slideio/slideio/scene.hpp"
+#include "slideio/core/colorprofile.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include "pyaux.hpp"
@@ -44,6 +45,8 @@ public:
     std::string getRawMetadata() const;
     slideio::MetadataFormat getMetadataFormat() const;
     pybind11::object getMetadata() const;
+    pybind11::object getColorProfile() const;
+    slideio::ColorProfileInfo getColorProfileInfo() const;
     std::string toString() const;
     int getNumZoomLevels() const;
     const slideio::LevelInfo& getZoomLevelInfo(int zoomLevel) const;

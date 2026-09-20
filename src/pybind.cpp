@@ -12,6 +12,7 @@
 #include "slideio/converter/converterparameters.hpp"
 #include <slideio/transformer/wrappers.hpp>
 #include <slideio/transformer/colorspace.hpp>
+#include <slideio/core/colorprofile.hpp>
 
 namespace py = pybind11;
 
@@ -70,6 +71,10 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_property_readonly("metadata_format", &PyScene::getMetadataFormat, "Metadata format")
         .def_property_readonly("metadata", &PyScene::getMetadata, "Scene metadata as a tree of dictionaries, lists and scalar values")
         .def("get_raw_metadata", &PyScene::getRawMetadata, "Scene raw metadata")
+        .def("get_color_profile", &PyScene::getColorProfile,
+             "Raw ICC profile bytes embedded in the scene, or None if it carries none")
+        .def("get_color_profile_info", &PyScene::getColorProfileInfo,
+             "Parsed ICC header of the scene colour profile")
         .def("get_channel_data_type", &PyScene::getChannelDataType, py::arg("index"), "Returns datatype of a channel by index")
         .def("get_channel_name", &PyScene::getChannelName, py::arg("index"), "Returns channel name (if any)")
         .def("get_aux_image", &PyScene::getAuxImage, py::arg("image_name"), "Returns an auxiliary image object by name")
@@ -219,6 +224,98 @@ PYBIND11_MODULE(slideiopybind, m) {
         .value("Luv", slideio::ColorSpace::LUV)
         .value("YUV", slideio::ColorSpace::YUV)
         .export_values();
+    py::enum_<slideio::ColorTarget>(m, "ColorTarget")
+        .value("SRGB", slideio::ColorTarget::sRGB)
+        .value("LINEAR_RGB", slideio::ColorTarget::LinearRGB)
+        .value("LAB", slideio::ColorTarget::Lab)
+        .value("XYZ", slideio::ColorTarget::XYZ);
+    py::enum_<slideio::ColorProfileSource>(m, "ColorProfileSource")
+        .value("NONE", slideio::ColorProfileSource::None)
+        .value("EMBEDDED", slideio::ColorProfileSource::Embedded)
+        .value("ASSUMED", slideio::ColorProfileSource::Assumed)
+        .value("SUPPLIED", slideio::ColorProfileSource::Supplied);
+    py::enum_<slideio::RenderingIntent>(m, "RenderingIntent")
+        .value("PERCEPTUAL", slideio::RenderingIntent::Perceptual)
+        .value("RELATIVE_COLORIMETRIC", slideio::RenderingIntent::RelativeColorimetric)
+        .value("SATURATION", slideio::RenderingIntent::Saturation)
+        .value("ABSOLUTE_COLORIMETRIC", slideio::RenderingIntent::AbsoluteColorimetric);
+    py::enum_<slideio::IccColorSpace>(m, "IccColorSpace")
+        .value("UNKNOWN", slideio::IccColorSpace::Unknown)
+        .value("GRAY", slideio::IccColorSpace::Gray)
+        .value("RGB", slideio::IccColorSpace::RGB)
+        .value("CMYK", slideio::IccColorSpace::CMYK)
+        .value("LAB", slideio::IccColorSpace::Lab)
+        .value("XYZ", slideio::IccColorSpace::XYZ)
+        .value("YCBCR", slideio::IccColorSpace::YCbCr);
+    py::enum_<slideio::MissingProfilePolicy>(m, "MissingProfilePolicy")
+        .value("ASSUME_SRGB", slideio::MissingProfilePolicy::AssumeSRGB)
+        .value("PASS_THROUGH", slideio::MissingProfilePolicy::PassThrough)
+        .value("FAIL", slideio::MissingProfilePolicy::Fail);
+    py::class_<slideio::ColorProfileInfo>(m, "ColorProfileInfo")
+        .def_readonly("present", &slideio::ColorProfileInfo::present)
+        .def_readonly("source", &slideio::ColorProfileInfo::source)
+        .def_readonly("description", &slideio::ColorProfileInfo::description)
+        .def_readonly("manufacturer", &slideio::ColorProfileInfo::manufacturer)
+        .def_readonly("model", &slideio::ColorProfileInfo::model)
+        .def_readonly("version", &slideio::ColorProfileInfo::version)
+        .def_readonly("data_space", &slideio::ColorProfileInfo::dataSpace)
+        .def_readonly("connection_space", &slideio::ColorProfileInfo::connectionSpace)
+        .def_readonly("intent", &slideio::ColorProfileInfo::intent)
+        .def_readonly("white_point", &slideio::ColorProfileInfo::whitePoint)
+        .def_readonly("size", &slideio::ColorProfileInfo::dataSize)
+        .def("__repr__", &slideio::ColorProfileInfo::toString);
+    py::class_<slideio::ColorManagementWrap, slideio::TransformationWrapper>(m, "ColorManagement")
+        .def(py::init<>())
+        .def_property_readonly("type", &slideio::ColorManagementWrap::getType, "Type of transformation")
+        .def_property("target", &slideio::ColorManagementWrap::getTarget,
+                      &slideio::ColorManagementWrap::setTarget, "Target colour space")
+        .def_property("intent", &slideio::ColorManagementWrap::getIntent,
+                      &slideio::ColorManagementWrap::setIntent, "ICC rendering intent")
+        .def_property("black_point_compensation",
+                      &slideio::ColorManagementWrap::getBlackPointCompensation,
+                      &slideio::ColorManagementWrap::setBlackPointCompensation,
+                      "Apply black point compensation")
+        .def_property("missing_profile_policy",
+                      &slideio::ColorManagementWrap::getMissingProfilePolicy,
+                      &slideio::ColorManagementWrap::setMissingProfilePolicy,
+                      "What to do when the slide embeds no ICC profile")
+        .def_property("source_profile_override",
+                      [](const slideio::ColorManagementWrap& self) -> py::object {
+                          const slideio::ColorProfile& profile = self.getSourceProfileOverride();
+                          if (profile.isEmpty()) {
+                              // None, not b"", so absence reads as absence -- the same
+                              // convention Scene.get_color_profile() uses.
+                              return py::none();
+                          }
+                          return py::bytes(
+                              reinterpret_cast<const char*>(profile.getData().data()),
+                              profile.getSize());
+                      },
+                      [](slideio::ColorManagementWrap& self, py::object value) {
+                          if (value.is_none()) {
+                              self.setSourceProfileOverride(slideio::ColorProfile());
+                              return;
+                          }
+                          if (!py::isinstance<py::bytes>(value)) {
+                              throw py::type_error(
+                                  "source_profile_override expects raw ICC profile bytes"
+                                  " or None");
+                          }
+                          const std::string raw = value.cast<std::string>();
+                          std::vector<uint8_t> data(raw.begin(), raw.end());
+                          // ColorProfile stamps non-empty bytes Embedded and nothing
+                          // here corrects that, because ColorManagement does it
+                          // itself: on bind it restamps a valid override Supplied,
+                          // whatever provenance the bytes arrived with. Leaving the
+                          // label to the one place that knows the profile did not
+                          // come out of the file keeps the two from disagreeing.
+                          self.setSourceProfileOverride(slideio::ColorProfile(std::move(data)));
+                      },
+                      "Raw ICC profile bytes to convert from, overriding whatever the"
+                      " scene embeds. For a scanner a lab has characterised itself:"
+                      " supplying it makes the conversion colorimetric even for a slide"
+                      " that carries no profile, so MissingProfilePolicy.FAIL no longer"
+                      " applies. Assign None to clear it.");
     py::enum_<slideio::DataType>(m, "DataType")
         .value("Byte", slideio::DataType::DT_Byte)
         .value("Int8", slideio::DataType::DT_Int8)

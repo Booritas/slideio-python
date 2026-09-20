@@ -104,25 +104,36 @@ class CMakeBuild(build_ext):
             self.build_temp = ext.build_dir
         extdir = os.path.abspath(os.path.dirname(
             self.get_ext_fullpath(ext.name)))
+        # Where CMake writes the extension and stages the slideio runtime --
+        # deliberately not extdir. extdir is the wheel's build_lib root, and
+        # bdist_wheel packages whatever it finds there, so pointing
+        # CMAKE_LIBRARY_OUTPUT_DIRECTORY at it put a second copy of every
+        # libslideio*.so/.dylib, plus the extension itself, into the wheel
+        # *root* on Linux and macOS -- beside the slideio package and on top of
+        # the copies staged under slideio/core/libs. Windows never showed it: a
+        # SHARED library's DLL is a RUNTIME artifact there and its import
+        # library an ARCHIVE one, so neither followed that variable. Everything
+        # the wheel gets is copied out of this directory below, by name.
+        cmake_out_dir = os.path.join(self.build_temp, 'runtime')
         print(f"----Python executable: {sys.executable}")
         cmake_args = [
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + cmake_out_dir,
+            '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + cmake_out_dir,
             '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
-
-        # Only use conan toolchain if SLIDEIO_INSTALL_DIR is not defined
-        if not os.environ.get('SLIDEIO_INSTALL_DIR'):
-            toolchain_path = './cmake/conan_toolchain.cmake'
-            if os.path.exists(os.path.join(ext.source_dir, toolchain_path)):
-                cmake_args.append('-DCMAKE_TOOLCHAIN_FILE=' + toolchain_path)
 
         cfg = 'Release'
         build_args = ['--config', cfg, "--target", "slideiopybind"]
 
         if platform.system() == "Windows":
+            # Visual Studio is a multi-config generator: without the per-config
+            # variables it appends a Release/ subdirectory of its own.
             cmake_args += [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
-                    cfg.upper(), extdir
+                    cfg.upper(), cmake_out_dir
+                ),
+                '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{}={}'.format(
+                    cfg.upper(), cmake_out_dir
                 )
             ]
             if sys.maxsize > 2**32:
@@ -156,16 +167,27 @@ class CMakeBuild(build_ext):
         elif PLATFORM == "Macos":
             patterns = ["*.so", "*.dylib"]
 
-        print("----Look for shared libraries int directory", self.build_temp)
+        wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
+
+        # Only cmake_out_dir, not the whole build tree: it holds exactly the
+        # extension and the runtime CMake staged beside it, and it lies outside
+        # extdir, so nothing collected here is already part of the wheel.
+        print("----Look for shared libraries in directory", cmake_out_dir)
         extra_files = []
         for pattern in patterns:
-            files = find_shared_libs(self.build_temp, pattern)
-            if len(files) > 0:
-                extra_files.extend(files)
+            extra_files.extend(find_shared_libs(cmake_out_dir, pattern))
 
         print("----Found libraries:", extra_files)
 
-        wheel_lib_dir = os.path.join(extdir, 'slideio', 'core', 'libs')
+        # An empty result means the build produced nothing to ship, and a wheel
+        # missing its extension fails at import rather than here, which is a far
+        # worse place to find out.
+        if not extra_files:
+            raise RuntimeError(
+                "No shared libraries found in {} after building the extension "
+                "(looked for {}).".format(cmake_out_dir, ", ".join(patterns))
+            )
+
         if os.path.exists(wheel_lib_dir):
             shutil.rmtree(wheel_lib_dir)
         os.makedirs(wheel_lib_dir)
@@ -174,7 +196,11 @@ class CMakeBuild(build_ext):
             file_name = os.path.basename(fl)
             destination = os.path.join(wheel_lib_dir, file_name)
             print("Copy", fl, "->", destination)
-            shutil.move(fl, destination)
+            # copy2, not move: the libraries must stay in the CMake output
+            # directory. A second build in a warm tree does not re-run the
+            # PRE_BUILD staging command when the target is already up to date,
+            # and a moved library would leave the next wheel without it.
+            shutil.copy2(fl, destination)
 
         for lib in REDISTR_LIBS:
             shutil.copy(find_library(lib), wheel_lib_dir)

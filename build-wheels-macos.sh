@@ -4,7 +4,7 @@ set -e
 # Check OS and platform
 os=$(uname -s)
 platform=$(uname -m)
-minversion=8
+minversion=9
 maxversion=14
 if [[ "$os" == "Darwin" && "$platform" == "x86_64" ]]; then
   # On macOS Intel, cap the Python version at 3.13
@@ -56,6 +56,12 @@ generate_python_versions minversion maxversion
 rm -rf ./dist
 eval "$(conda shell.bash hook)"
 
+# The C++ library does not depend on the Python version. Build it once, into
+# extern/slideio-install, before the loop below starts deleting ./build.
+# No-op when the prefix already matches the checked-out submodule commit.
+python3 build-slideio.py -c release
+
+
 for version in "${python_versions[@]}"; do
 
    echo "-----processing python verion $version"
@@ -69,9 +75,11 @@ for version in "${python_versions[@]}"; do
    python --version
    echo "Installing wheel in conda environment for Python $version"
    python -m pip install wheel
-   python -m pip install conan
    python -m pip install build
-   python -m build
+   # --wheel: build from the work tree. A bare `python -m build` builds the
+   # wheel from an unpacked sdist in a temp dir, and the sdist ships no
+   # extern/, so CMake finds no extern/slideio-install there and fails.
+   python -m build --wheel
    #python setup.py sdist bdist_wheel
    ls -la ./dist
    

@@ -331,6 +331,23 @@ pybind11::object PyScene::getMetadata() const
     return metadataToPyObject(m_scene->getMetadata());
 }
 
+pybind11::object PyScene::getColorProfile() const
+{
+    const slideio::ColorProfile profile = m_scene->getColorProfile();
+    if (profile.isEmpty()) {
+        // None rather than an empty bytes object, so `if icc is None` reads
+        // naturally and absence cannot be mistaken for a zero-length profile.
+        return pybind11::none();
+    }
+    return pybind11::bytes(reinterpret_cast<const char*>(profile.getData().data()),
+                           profile.getSize());
+}
+
+slideio::ColorProfileInfo PyScene::getColorProfileInfo() const
+{
+    return m_scene->getColorProfileInfo();
+}
+
 std::string PyScene::toString() const {
     return m_scene->toString();
 }

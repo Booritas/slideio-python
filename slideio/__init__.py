@@ -14,6 +14,13 @@ from .core import (
     DataType,
     BilateralFilter,
     CannyFilter,
+    ColorManagement,
+    ColorProfileInfo,
+    ColorTarget,
+    ColorProfileSource,
+    RenderingIntent,
+    IccColorSpace,
+    MissingProfilePolicy,
 )
 
 from .wrappers import (
