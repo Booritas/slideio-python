@@ -115,7 +115,7 @@ invoke_conan_create_slideio() {
 original_dir=$(pwd)
 
 create_conan_recipes() {
-    invoke_conan_create_slideio "recipes/slideio/all" "2.9.0"
+    invoke_conan_create_slideio "recipes/slideio/all" "2.9.3"
 }
 
 # Call the function with the appropriate profile
