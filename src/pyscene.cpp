@@ -69,6 +69,26 @@ double PyScene::getMagnification() const
     return m_scene->getMagnification();
 }
 
+int PyScene::getChannelSignificantBits(int channel) const
+{
+    return m_scene->getChannelSignificantBits(channel);
+}
+
+bool PyScene::hasPlaneTimestamps() const
+{
+    return m_scene->hasPlaneTimestamps();
+}
+
+double PyScene::getPlaneTimestamp(int tFrame, int channel, int zSlice) const
+{
+    return m_scene->getPlaneTimestamp(tFrame, channel, zSlice);
+}
+
+int64_t PyScene::getAcquisitionTime() const
+{
+    return m_scene->getAcquisitionTime();
+}
+
 slideio::Compression PyScene::getCompression() const
 {
     return m_scene->getCompression();

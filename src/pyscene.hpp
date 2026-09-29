@@ -31,6 +31,10 @@ public:
     double getZSliceResolution() const;
     double getTFrameResolution() const;
     double getMagnification() const;
+    int getChannelSignificantBits(int channel) const;
+    bool hasPlaneTimestamps() const;
+    double getPlaneTimestamp(int tFrame, int channel, int zSlice) const;
+    int64_t getAcquisitionTime() const;
     slideio::Compression getCompression() const;
     pybind11::dtype getChannelDataType(int channel) const;
     pybind11::array readBlock(std::tuple<int,int,int,int> rect,

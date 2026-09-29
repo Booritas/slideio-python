@@ -61,6 +61,10 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def_property_readonly("z_resolution", &PyScene::getZSliceResolution, "Scene resolution in z direction")
         .def_property_readonly("t_resolution", &PyScene::getTFrameResolution, "Time frame resolution")
         .def_property_readonly("magnification", &PyScene::getMagnification, "Scanning magnification")
+        .def_property_readonly("acquisition_time", &PyScene::getAcquisitionTime,
+             "Acquisition start in seconds since 1970-01-01T00:00:00Z, 0 if unknown")
+        .def_property_readonly("has_plane_timestamps", &PyScene::hasPlaneTimestamps,
+             "True if every plane of the scene has a timestamp")
         .def_property_readonly("num_z_slices", &PyScene::getNumZSlices, "Number of slices in z direction")
         .def_property_readonly("num_t_frames", &PyScene::getNumTFrames, "Number of time frames")
         .def_property_readonly("compression", &PyScene::getCompression, "Compression type")
@@ -75,6 +79,13 @@ PYBIND11_MODULE(slideiopybind, m) {
              "Raw ICC profile bytes embedded in the scene, or None if it carries none")
         .def("get_color_profile_info", &PyScene::getColorProfileInfo,
              "Parsed ICC header of the scene colour profile")
+        .def("get_channel_significant_bits", &PyScene::getChannelSignificantBits,
+             py::arg("index"),
+             "Native significant bits of a channel by index; 0 when unknown")
+        .def("get_plane_timestamp", &PyScene::getPlaneTimestamp,
+             py::arg("t_frame"), py::arg("channel"), py::arg("z_slice"),
+             "Seconds from the scene acquisition origin to the given plane; "
+             "0 if the scene has no plane timestamps or an index is out of range")
         .def("get_channel_data_type", &PyScene::getChannelDataType, py::arg("index"), "Returns datatype of a channel by index")
         .def("get_channel_name", &PyScene::getChannelName, py::arg("index"), "Returns channel name (if any)")
         .def("get_aux_image", &PyScene::getAuxImage, py::arg("image_name"), "Returns an auxiliary image object by name")

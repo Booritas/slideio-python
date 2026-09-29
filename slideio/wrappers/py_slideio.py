@@ -68,6 +68,20 @@ class Scene(object):
         return self.scene.magnification
 
     @property
+    def acquisition_time(self):
+        '''Acquisition start in seconds since 1970-01-01T00:00:00Z, 0 if unknown.
+
+        This is the origin get_plane_timestamp measures from, so the absolute
+        time of a plane is acquisition_time + get_plane_timestamp(...).
+        '''
+        return self.scene.acquisition_time
+
+    @property
+    def has_plane_timestamps(self):
+        '''True if every plane of the scene has a timestamp.'''
+        return self.scene.has_plane_timestamps
+
+    @property
     def num_channels(self):
         '''Number of raster channels in the scene raster data.'''
         return self.scene.num_channels
@@ -220,6 +234,35 @@ class Scene(object):
             channel: channel index.
         '''
         return self.scene.get_channel_name(channel)
+
+    def get_channel_significant_bits(self, channel):
+        '''Returns the native significant bits of a scene channel by index.
+
+        This is the number of bits the acquisition actually filled, which can be
+        narrower than the channel data type: 16 bit samples carrying 10 bits of
+        camera data report 10. Returns 0 when the format does not state it or
+        the index is out of range.
+
+        Args:
+            channel: channel index.
+        '''
+        return self.scene.get_channel_significant_bits(channel)
+
+    def get_plane_timestamp(self, t_frame, channel, z_slice):
+        '''Returns when one plane was acquired, in seconds from the scene origin.
+
+        The origin is acquisition_time when the file records an acquisition
+        start, and the scene's earliest plane otherwise. Differences between
+        planes are always meaningful; an absolute time needs acquisition_time to
+        be non-zero. Returns 0 if has_plane_timestamps is False or an index is
+        out of range.
+
+        Args:
+            t_frame: time frame index.
+            channel: channel index.
+            z_slice: z slice index.
+        '''
+        return self.scene.get_plane_timestamp(t_frame, channel, z_slice)
 
     def save_image(self, params, output_path, callback=None):
         '''Save scene image to a file
