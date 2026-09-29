@@ -8,7 +8,15 @@ import shutil
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from ctypes.util import find_library
+
+# A PEP 517 frontend exec()s this file rather than importing it, so the
+# repository root is not on sys.path and a plain "import msvcredist" fails with
+# ModuleNotFoundError. Put the directory holding this file first.
+_here = os.path.dirname(os.path.abspath(__file__))
+if _here not in sys.path:
+    sys.path.insert(0, _here)
+
+import msvcredist
 
 def _parse_version(v):
     """Parse a dotted version string into a comparable integer tuple."""
@@ -202,8 +210,15 @@ class CMakeBuild(build_ext):
             # and a moved library would leave the next wheel without it.
             shutil.copy2(fl, destination)
 
-        for lib in REDISTR_LIBS:
-            shutil.copy(find_library(lib), wheel_lib_dir)
+        # Resolved from the toolset's own redistributable directory, never from
+        # PATH: a stale msvcp140.dll picked up from an unrelated product makes
+        # every slideio DLL in the wheel fail to initialise. See msvcredist.py.
+        if REDISTR_LIBS:
+            redist_dirs = msvcredist.redist_search_dirs()
+            for lib in REDISTR_LIBS:
+                source = msvcredist.find_redist_dll(lib, redist_dirs)
+                print("Copy redistributable", source, "->", wheel_lib_dir)
+                shutil.copy(source, wheel_lib_dir)
 
 
 setup(
