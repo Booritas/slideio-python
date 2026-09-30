@@ -12,6 +12,7 @@
 #include "slideio/converter/converterparameters.hpp"
 #include <slideio/transformer/wrappers.hpp>
 #include <slideio/transformer/colorspace.hpp>
+#include <slideio/transformer/transformationtype.hpp>
 #include <slideio/core/colorprofile.hpp>
 
 namespace py = pybind11;
@@ -219,6 +220,20 @@ PYBIND11_MODULE(slideiopybind, m) {
     py::class_<slideio::converter::OMETIFFJp2KConverterParameters, slideio::converter::OMETIFFConverterParameters, slideio::converter::ConverterParameters>(m, "OMETIFFJp2KParameters")
         .def(py::init<>())
         .def_property("compression_rate", &slideio::converter::OMETIFFJp2KConverterParameters::getCompressionRate, &slideio::converter::OMETIFFJp2KConverterParameters::setCompressionRate, "Compression rate of JPEG200 encoding");
+    // Registered before the classes whose "type" property returns it: without
+    // this every Transformation.type read raises
+    // "TypeError: Unregistered type : slideio::TransformationType".
+    py::enum_<slideio::TransformationType>(m, "TransformationType")
+        .value("Unknown", slideio::TransformationType::Unknown)
+        .value("ColorTransformation", slideio::TransformationType::ColorTransformation)
+        .value("GaussianBlurFilter", slideio::TransformationType::GaussianBlurFilter)
+        .value("MedianBlurFilter", slideio::TransformationType::MedianBlurFilter)
+        .value("SobelFilter", slideio::TransformationType::SobelFilter)
+        .value("ScharrFilter", slideio::TransformationType::ScharrFilter)
+        .value("LaplacianFilter", slideio::TransformationType::LaplacianFilter)
+        .value("BilateralFilter", slideio::TransformationType::BilateralFilter)
+        .value("CannyFilter", slideio::TransformationType::CannyFilter)
+        .value("ColorManagement", slideio::TransformationType::ColorManagement);
     py::class_<slideio::TransformationWrapper>(m, "Transformation")
         .def_property_readonly("type", &slideio::TransformationWrapper::getType, "Type of transformation");
     py::class_<slideio::ColorTransformationWrap, slideio::TransformationWrapper>(m, "ColorTransformation")

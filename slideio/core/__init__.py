@@ -1,5 +1,7 @@
 from .libs.slideiopybind import (
     Compression,
+    MetadataFormat,
+    TransformationType,
     SVSJpegParameters,
     SVSJp2KParameters,
     OMETIFFJpegParameters,
@@ -38,6 +40,8 @@ from .libs.slideiopybind import (
 __all__ = [
     # public enums and parameter types re-exported from the C++ binding
     "Compression",
+    "MetadataFormat",
+    "TransformationType",
     "SVSJpegParameters",
     "SVSJp2KParameters",
     "OMETIFFJpegParameters",

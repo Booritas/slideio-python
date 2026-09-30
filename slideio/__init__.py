@@ -1,5 +1,7 @@
 from .core import (
     Compression,
+    MetadataFormat,
+    TransformationType,
     SVSJpegParameters,
     SVSJp2KParameters,
     OMETIFFJpegParameters,
@@ -37,6 +39,7 @@ from .wrappers import (
 
 
 __all__ = [
+    # wrappers
     "Scene",
     "Slide",
     "get_driver_ids",
@@ -46,4 +49,31 @@ __all__ = [
     "convert_scene",
     "transform_scene",
     "get_version",
+    # enums and parameter types re-exported from the C++ binding.  These were
+    # imported above but missing here, so "from slideio import *" did not bring
+    # them in even though attribute access worked.
+    "Compression",
+    "MetadataFormat",
+    "TransformationType",
+    "DataType",
+    "SVSJpegParameters",
+    "SVSJp2KParameters",
+    "OMETIFFJpegParameters",
+    "OMETIFFJp2KParameters",
+    "ColorTransformation",
+    "ColorSpace",
+    "ColorManagement",
+    "ColorProfileInfo",
+    "ColorTarget",
+    "ColorProfileSource",
+    "RenderingIntent",
+    "IccColorSpace",
+    "MissingProfilePolicy",
+    "GaussianBlurFilter",
+    "MedianBlurFilter",
+    "ScharrFilter",
+    "SobelFilter",
+    "LaplacianFilter",
+    "BilateralFilter",
+    "CannyFilter",
 ]
