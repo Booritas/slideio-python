@@ -1,6 +1,23 @@
 #!/bin/bash
 set -e
 
+# One value drives two things: clang's -mmacosx-version-min, so the extension
+# carries the same floor as the slideio dylibs beside it in the wheel, and
+# sysconfig.get_platform(), so the wheel's macosx_X_Y tag states that floor
+# instead of the build machine's own macOS version.
+#
+# 2.10.0's first wheels had neither. Every libslideio*.dylib carried minos 12.0
+# from the C++ library's deployment target while slideiopybind.so carried the
+# runner's -- 14.0 on macos-14, 15.0 on macos-15-intel -- so the wheels could
+# not load on anything older than the machine that built them, whatever the
+# filename said. Renaming the file afterwards could not change that, and the
+# script that used to do it has been replaced by check-macos-wheels.py, which
+# verifies the claim instead of asserting it.
+#
+# Keep in step with CMakeLists.txt and extern/slideio/CMakeLists.txt;
+# tests/test_wheel_scripts.py fails if the three drift apart.
+export MACOSX_DEPLOYMENT_TARGET=12.0
+
 # Check OS and platform
 os=$(uname -s)
 platform=$(uname -m)
@@ -85,3 +102,8 @@ for version in "${python_versions[@]}"; do
    
    deactivate_and_remove_conda_env $version
 done
+
+# The wheels are only as good as the claim on their filename. This fails the
+# build if any Mach-O inside a wheel needs a newer macOS than the tag promises
+# -- the failure 2.10.0 shipped, caught here rather than on a release page.
+python3 check-macos-wheels.py ./dist

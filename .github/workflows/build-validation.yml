@@ -177,7 +177,19 @@ jobs:
       run: python build-slideio.py -c release
 
     - name: build one wheel
+      # The same value build-wheels-macos.sh exports, for the same two reasons:
+      # clang's -mmacosx-version-min, so the extension carries the floor the
+      # slideio dylibs do, and the wheel's platform tag. Without it the gate
+      # would build a differently-tagged wheel from the one a release ships.
+      env:
+        MACOSX_DEPLOYMENT_TARGET: '12.0'
       run: python -m build --wheel
+
+    - name: check the wheel's macOS tag against its binaries
+      # Fails if any Mach-O in the wheel needs a newer macOS than the tag
+      # promises -- the defect 2.10.0 shipped, caught on a pull request rather
+      # than on a release page. Ungated: it needs no image corpus.
+      run: python check-macos-wheels.py dist
 
     - name: test the built wheel
       if: vars.SLIDEIO_IMAGES_PATH != ''
