@@ -113,7 +113,24 @@ Conan cache for slideio's dependencies.
 
 - All three scripts call `build-slideio.py` once before their Python-version loop; the loop itself only ever rebuilds the extension, never the C++ library.
 - `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.9–3.14 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
-- `build-wheels-manylinux.sh`, `build-wheels-macos.sh` + `repair-wheels.sh`/`rename-macos-wheels.sh` for the other platforms.
+- `build-wheels-manylinux.sh`, `build-wheels-macos.sh` + `repair-wheels.sh` for
+  the other platforms. The manylinux loop skips the image's free-threaded
+  interpreters (`cp313t`, `cp314t`): the extension carries pybind11's default
+  GIL assumptions, and a wheel built by accident of a glob advertises support
+  nothing has verified.
+- **macOS deployment target.** `build-wheels-macos.sh` exports
+  `MACOSX_DEPLOYMENT_TARGET=12.0`, and `CMakeLists.txt` sets
+  `CMAKE_OSX_DEPLOYMENT_TARGET` to the same value before `project()`. One value
+  drives two things: what clang compiles the extension against, and what
+  `sysconfig.get_platform()` puts in the wheel's platform tag. Keep it in step
+  with `extern/slideio/CMakeLists.txt` — `tests/test_wheel_scripts.py` fails if
+  the three drift apart. Without it the extension inherits the build runner's
+  SDK while the slideio dylibs beside it keep the 12.0 floor, which is how
+  2.10.0's first wheels shipped tagged for a macOS they could not load on.
+  `check-macos-wheels.py` reads the `minos` out of every Mach-O in each wheel
+  and fails the build if one exceeds the tag; it runs at the end of
+  `build-wheels-macos.sh` and as a step in the gate's macOS job. There is no
+  rename step any more — rewriting a filename never changed a binary.
 - CI: `.github/workflows/{windows,linux,macos}-wheels.yml` build the full wheel
   set for one platform. Each is triggered either by `workflow_dispatch` or by
   `workflow_call` from `release.yml`, and takes three inputs when called:

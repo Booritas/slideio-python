@@ -38,6 +38,25 @@ endif()
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
+# Before project(), which is where CMake reads it.
+#
+# Without this the extension is compiled against the build machine's SDK, while
+# the slideio dylibs beside it in the wheel carry the 12.0 floor that
+# extern/slideio/CMakeLists.txt sets. 2.10.0's first wheels shipped exactly that
+# split: every libslideio*.dylib had minos 12.0 and slideiopybind.so had minos
+# 14.0 on the macos-14 runner and 15.0 on macos-15-intel, so the wheels would
+# not load on anything older than the machine that built them -- whatever their
+# filename claimed.
+#
+# Keep in step with extern/slideio/CMakeLists.txt's CMAKE_OSX_DEPLOYMENT_TARGET;
+# tests/test_wheel_scripts.py fails if the two drift apart. MACOSX_DEPLOYMENT_TARGET
+# in the environment still wins, which is how the wheel scripts drive both this
+# and the wheel's platform tag from one value.
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version" FORCE)
+endif()
+
 project(${PROJECT_NAME} VERSION ${projectVersion} LANGUAGES C CXX)
 set(CMAKE_VERBOSE_MAKEFILE off)
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src)

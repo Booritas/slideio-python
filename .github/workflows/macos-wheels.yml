@@ -106,9 +106,14 @@ jobs:
     - name: Build wheels
       working-directory: slideio
       shell: bash -el {0}
+      # No rename step any more. rename-macos-wheels.sh used to rewrite the
+      # platform tag after the fact, which changed the filename and not the
+      # binary -- 2.10.0 shipped wheels tagged for a macOS they could not load
+      # on. build-wheels-macos.sh now exports MACOSX_DEPLOYMENT_TARGET so the
+      # tag is right when the wheel is built, and ends by running
+      # check-macos-wheels.py to prove it.
       run: |
         ./build-wheels-macos.sh
-        ./rename-macos-wheels.sh ./dist
 
     - name: test the built wheel
       # tests/ covers the parts that exist only on the Python side of the

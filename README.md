@@ -165,9 +165,13 @@ the extension per version.
 .\build-wheels-win.ps1         # Windows, needs conda
 ```
 
-macOS wheels are then renamed with `./rename-macos-wheels.sh ./dist`; Linux wheels
-are repaired by `auditwheel` inside `build-wheels-manylinux.sh` and land in
-`wheelhouse/`.
+macOS wheels are built with `MACOSX_DEPLOYMENT_TARGET=12.0`, matching the macOS
+floor the slideio C++ libraries are compiled against, so a wheel's `macosx_12_0`
+tag states what its binaries actually require. `build-wheels-macos.sh` ends by
+running `check-macos-wheels.py`, which reads the minimum macOS version out of
+every binary in every wheel and fails the build if any of them needs a newer
+macOS than the filename promises. Linux wheels are repaired by `auditwheel`
+inside `build-wheels-manylinux.sh` and land in `wheelhouse/`.
 
 ### Building on Linux with the manylinux Docker container
 
