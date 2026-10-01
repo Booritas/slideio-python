@@ -409,6 +409,17 @@ class TestBuildValidation(unittest.TestCase):
         self.assertEqual(['main'], on['pull_request']['branches'])
         self.assertIn('workflow_dispatch', on)
 
+    def test_documentation_only_changes_skip_the_gate(self):
+        # A prose-only commit otherwise rebuilds the C++ library on three
+        # platforms -- about 45 minutes of runner time for a file no build
+        # reads. Both triggers need the list: without it on `pull_request`, a
+        # docs PR still pays for the full gate.
+        on = triggers(self.workflow)
+        for event in ('push', 'pull_request'):
+            with self.subTest(event=event):
+                self.assertEqual(['docs/**', '**/*.md'],
+                                 on[event]['paths-ignore'])
+
     def test_supersedes_its_own_earlier_runs(self):
         self.assertTrue(self.workflow['concurrency']['cancel-in-progress'])
 
