@@ -118,13 +118,31 @@ an unrepaired Windows wheel does not import. A gate that skipped it would be
 testing an artifact that never ships. `Repair-Naming` iterates `.\dist\*.whl` and
 is therefore safe to call with a single wheel present.
 
-### Expected cost
+### Measured cost
 
-The C++ library build dominates and `build-slideio.py` runs once either way, so
-one wheel instead of five or six should put each job near 15–25 min against the
-14–40 min the full wheel workflows take. The three run in parallel. This is an
-estimate from the existing run history, to be replaced with measured numbers once
-the gate has run.
+From the gate's first run (PR #2, 2026-10-01, run 36882464567 — all four jobs
+green):
+
+| Job | Duration |
+|---|---|
+| CI tooling tests | 14s |
+| Windows x86_64 | 9m 33s |
+| manylinux_2_28 (x86_64) | 13m 01s |
+| macOS arm64 | 22m 04s |
+
+They run in parallel, so the gate costs **22 minutes of wall clock** and about 45
+minutes of runner time per push. Against the 14–40 min the full wheel workflows
+take for five or six wheels, that is roughly what the estimate predicted for
+macOS and better than predicted on the other two: the C++ library build
+dominates, `build-slideio.py` runs once either way, and a warm Conan cache does
+the rest.
+
+Two things this run settled that no local test could. The gate installs Conan
+with `pip` behind `actions/setup-python` on macOS and Windows, rather than in the
+conda environment the wheel workflows create — that works, including on Windows
+with no `msvc-dev-cmd`, where the committed "Visual Studio 17 2022" generator
+finds the toolchain itself. And `git rev-parse HEAD:extern/slideio` runs inside
+the manylinux container with the `safe.directory` line ahead of it.
 
 ## 2. `release.yml`
 
