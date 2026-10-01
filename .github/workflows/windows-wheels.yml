@@ -1,16 +1,31 @@
 name: Build Windows Wheels
 
 on:
+  # Callable by release.yml and still dispatchable by hand. The dispatch inputs
+  # are unchanged -- there are none -- so the manual experience is the same.
+  workflow_call:
+    inputs:
+      ci_pipeline_iid:
+        description: 'Patch component of the package version'
+        required: false
+        default: '0'
+        type: string
+      artifact_name:
+        description: 'Name of the uploaded wheel artifact'
+        required: false
+        default: 'wheels-windows-x86_64'
+        type: string
   workflow_dispatch:
-
-env:
-  CONAN_REVISIONS_ENABLED: 1
-  CONAN_DISABLE_CHECK_COMPILER: 1
-  SLIDEIO_HOME: ${{ github.workspace }}/slideio
 
 jobs:
   build-win:
     runs-on: windows-2022
+
+    env:
+      # An input rather than an inherited variable: workflow-level env in the
+      # caller does not cross into a called workflow. setup.py:38-41 turns this
+      # into the wheel's patch component.
+      CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid }}
 
     steps:
     - name: Setup cmake
@@ -26,6 +41,19 @@ jobs:
         # and carries four submodules of its own.
         submodules: 'recursive'
         path: slideio
+
+    - name: resolve the slideio submodule commit
+      id: slideio
+      shell: bash
+      working-directory: slideio
+      # `git rev-parse HEAD:<path>` reads the gitlink out of the tree, so this
+      # works whether or not the submodule is initialised. It replaces hashing
+      # a path inside the submodule's internal git metadata directory, which
+      # hashFiles() turns into an empty string when the glob matches nothing,
+      # leaving restore-keys to hide the degraded key.
+      run: |
+        set -euo pipefail
+        echo "sha=$(git rev-parse HEAD:extern/slideio)" >> "$GITHUB_OUTPUT"
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
@@ -45,7 +73,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.conan2
-        key: conan-windows-${{ hashFiles('slideio/.git/modules/extern/slideio/HEAD') }}
+        key: conan-windows-${{ steps.slideio.outputs.sha }}
         restore-keys: |
           conan-windows-
 
@@ -68,9 +96,9 @@ jobs:
       # binding -- everything else is tested in the C++ repository -- and it
       # needs the shared image corpus. Set the SLIDEIO_IMAGES_PATH repository
       # variable to enable the step; with nothing to read there is nothing to
-      # test, so it is skipped. SLIDEIO_SKIP_MISSING_IMAGES stays unset on
-      # purpose: in CI a missing image must fail the run, not quietly skip the
-      # test that needed it.
+      # test, so it is skipped. The env var that would turn a missing image
+      # into a skip stays unset on purpose: in CI a missing image must fail
+      # the run, not quietly skip the test that needed it.
       if: vars.SLIDEIO_IMAGES_PATH != ''
       shell: pwsh
       env:
@@ -78,7 +106,9 @@ jobs:
       run: |
         conda create -n wheeltest python=3.12 -y
         conda activate wheeltest
-        python -m pip install pytest pillow numpy
+        # pyyaml for tests/test_workflows.py, which reads the workflow YAML and
+        # needs no wheel of its own.
+        python -m pip install pytest pillow numpy pyyaml
         # The renamed wheel, not the work tree: this tests what ships.
         python -m pip install --no-index --find-links "$env:GITHUB_WORKSPACE/slideio/dist" slideio
         # Run from outside the checkout so `import slideio` resolves to the
@@ -89,4 +119,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
+        name: ${{ inputs.artifact_name }}
         path: ./slideio/dist/*.whl
+        if-no-files-found: error
+        retention-days: 30
