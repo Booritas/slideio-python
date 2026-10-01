@@ -45,6 +45,17 @@ echo "Build python wheels"
 
 for dir in /opt/python/cp*
 do
+  # Skip the free-threaded interpreters (cp313t, cp314t, ...). The image ships
+  # them alongside the GIL builds, so the glob picks them up and Linux ends up
+  # with one more wheel than every other platform -- 2.10.0's draft release had
+  # a cp314-cp314t wheel that no other platform had, and that nothing tested.
+  # The extension is built with pybind11's default GIL assumptions, so a
+  # free-threaded wheel advertises support that has not been verified. Build it
+  # deliberately, with its own testing, rather than by accident of a glob.
+  if [[ "$dir" == *t ]]; then
+    echo "****Skipping free-threaded interpreter $dir"
+    continue
+  fi
   if [[ "$dir" != *"36"* ]]; then
      if [[ $dir != *"cp36"* ]]; then
     export py="$dir/bin/python"
