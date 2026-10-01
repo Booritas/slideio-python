@@ -319,5 +319,64 @@ class TestWheelWorkflows(unittest.TestCase):
                               caches[0]['with']['key'])
 
 
+class TestBuildValidation(unittest.TestCase):
+    def setUp(self):
+        self.workflow = load('build-validation.yml')
+
+    def test_runs_on_push_and_pull_request_to_main(self):
+        on = triggers(self.workflow)
+        self.assertEqual(['main'], on['push']['branches'])
+        self.assertEqual(['main'], on['pull_request']['branches'])
+        self.assertIn('workflow_dispatch', on)
+
+    def test_supersedes_its_own_earlier_runs(self):
+        self.assertTrue(self.workflow['concurrency']['cancel-in-progress'])
+
+    def test_builds_the_three_shipped_platforms(self):
+        self.assertEqual({'manylinux', 'macos', 'windows'},
+                         set(self.workflow['jobs']))
+
+    def test_one_platform_failing_does_not_hide_the_others(self):
+        for name, job in self.workflow['jobs'].items():
+            with self.subTest(job=name):
+                self.assertNotIn('needs', job)
+
+    def test_no_job_runs_a_full_wheel_script(self):
+        # The gate builds one wheel per platform; the 3.9-3.14 loop the wheel
+        # scripts run is roughly six times the cost.
+        self.assertNotIn('build-wheels-', read('build-validation.yml'))
+
+    def test_every_job_tests_the_wheel_behind_the_corpus_variable(self):
+        for name, job in self.workflow['jobs'].items():
+            with self.subTest(job=name):
+                tested = [step for step in job['steps']
+                          if 'pytest' in str(step.get('run', ''))]
+                self.assertEqual(1, len(tested))
+                self.assertIn('vars.SLIDEIO_IMAGES_PATH', tested[0]['if'])
+
+    def test_every_job_checks_out_submodules_recursively(self):
+        for name, job in self.workflow['jobs'].items():
+            with self.subTest(job=name):
+                checkouts = [step for step in job['steps']
+                             if str(step.get('uses', '')).startswith(
+                                 'actions/checkout')]
+                self.assertEqual(1, len(checkouts))
+                self.assertEqual('recursive',
+                                 checkouts[0]['with']['submodules'])
+
+    def test_windows_repairs_the_pyd_name_inside_the_wheel(self):
+        # lib.ps1:47 renames slideiopybind*.pyd to the name the package
+        # imports; an unrepaired Windows wheel does not import at all, so a
+        # gate that skipped this would be testing something that never ships.
+        steps = self.workflow['jobs']['windows']['steps']
+        self.assertTrue(any('Repair-Naming' in str(step.get('run', ''))
+                            for step in steps))
+
+    def test_manylinux_repairs_the_wheel_before_testing_it(self):
+        steps = self.workflow['jobs']['manylinux']['steps']
+        self.assertTrue(any('auditwheel repair' in str(step.get('run', ''))
+                            for step in steps))
+
+
 if __name__ == '__main__':
     unittest.main()
