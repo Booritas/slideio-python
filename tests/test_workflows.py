@@ -494,7 +494,8 @@ class TestBuildValidation(unittest.TestCase):
                   if 'pytest tests/' in str(step.get('run', ''))]
         self.assertEqual(1, len(tested))
         self.assertEqual(
-            ['tests/test_ci_version.py', 'tests/test_workflows.py'],
+            ['tests/test_ci_version.py', 'tests/test_wheel_scripts.py',
+             'tests/test_workflows.py'],
             sorted(re.findall(r'tests/\S+\.py', tested[0])))
 
     def test_every_platform_job_checks_out_submodules_recursively(self):

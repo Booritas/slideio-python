@@ -55,7 +55,7 @@ jobs:
       run: python -m pip install pytest pyyaml
 
     - name: run the CI tooling tests
-      run: pytest tests/test_ci_version.py tests/test_workflows.py
+      run: pytest tests/test_ci_version.py tests/test_wheel_scripts.py tests/test_workflows.py
 
   # No `needs` anywhere in this file, deliberately: one platform failing should
   # not hide whether the other two build.
