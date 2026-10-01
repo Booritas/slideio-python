@@ -14,6 +14,7 @@ source tree instead of the wheel.
 """
 import glob
 import os
+import re
 import unittest
 
 import yaml
@@ -65,6 +66,30 @@ def steps_of(workflow):
             yield job_name, step
 
 
+def env_blocks(workflow):
+    """Yield every `env:` mapping in the workflow -- workflow, job and step."""
+    if isinstance(workflow.get('env'), dict):
+        yield workflow['env']
+    for job in workflow.get('jobs', {}).values():
+        if isinstance(job.get('env'), dict):
+            yield job['env']
+        for step in job.get('steps') or []:
+            if isinstance(step.get('env'), dict):
+                yield step['env']
+
+
+def sets_variable(workflow, variable):
+    """True if any env: block or `run:` shell assignment sets `variable`."""
+    if any(variable in env for env in env_blocks(workflow)):
+        return True
+    # `VAR=x`, `export VAR=x`, `VAR=x cmd`, and the same after a ; && || pipe.
+    assignment = re.compile(
+        r'(?:^|[;&|]|\bexport\s+)\s*' + re.escape(variable) + r'\s*=',
+        re.MULTILINE)
+    return any(assignment.search(str(step.get('run', '')))
+               for _job, step in steps_of(workflow))
+
+
 class TestEveryWorkflow(unittest.TestCase):
     def test_the_wheel_workflows_are_all_present(self):
         # ALL_WORKFLOWS is discovered by glob; this is what stops every test in
@@ -89,26 +114,46 @@ class TestEveryWorkflow(unittest.TestCase):
         # extern/slideio, or the C++ working copy; CONAN_DISABLE_CHECK_COMPILER
         # is a CMake variable (CMakeLists.txt:48), not an environment one; and
         # CONAN_REVISIONS_ENABLED is a Conan 1 knob in a Conan 2 build.
+        #
+        # Structural rather than textual, for the reason given in
+        # test_skip_missing_images_is_never_set.
         for name in ALL_WORKFLOWS:
             for dead in ('SLIDEIO_HOME', 'CONAN_REVISIONS_ENABLED',
                          'CONAN_DISABLE_CHECK_COMPILER'):
                 with self.subTest(workflow=name, variable=dead):
-                    self.assertNotIn(dead, read(name))
+                    self.assertFalse(sets_variable(load(name), dead))
 
     def test_skip_missing_images_is_never_set(self):
         # CLAUDE.md: CI must leave it unset, so a missing image fails the run
         # instead of quietly skipping the test that needed it.
+        #
+        # Checked against env: blocks and shell assignments rather than the
+        # file text. The test steps name this variable in a comment precisely
+        # to explain why it is absent, and a substring check would forbid
+        # saying so -- which is the one thing a reader of those steps most
+        # needs to know.
         for name in ALL_WORKFLOWS:
             with self.subTest(workflow=name):
-                self.assertNotIn('SLIDEIO_SKIP_MISSING_IMAGES', read(name))
+                self.assertFalse(
+                    sets_variable(load(name), 'SLIDEIO_SKIP_MISSING_IMAGES'))
 
     def test_cache_keys_do_not_hash_the_git_directory(self):
         # hashFiles() on a glob that matches nothing returns an empty string,
         # restore-keys then papers over the degraded key, and the cache stops
         # tracking the submodule commit with nothing in the log to say so.
+        #
+        # Checked against the cache steps' own key fields rather than the file
+        # text, so the comment above a corrected key can still name the
+        # mistake it corrects.
         for name in ALL_WORKFLOWS:
-            with self.subTest(workflow=name):
-                self.assertNotIn('.git/modules', read(name))
+            for job, step in steps_of(load(name)):
+                if not str(step.get('uses', '')).startswith('actions/cache'):
+                    continue
+                with self.subTest(workflow=name, job=job):
+                    parameters = step.get('with', {})
+                    keys = ' '.join(str(parameters.get(field, ''))
+                                    for field in ('key', 'restore-keys'))
+                    self.assertNotIn('.git', keys)
 
     def test_uploads_are_named_and_fail_when_empty(self):
         for name in ALL_WORKFLOWS:
@@ -199,6 +244,18 @@ class TestWheelWorkflows(unittest.TestCase):
         self.assertEqual(
             ['macos-14', 'macos-15-intel'],
             on['workflow_dispatch']['inputs']['os']['options'])
+
+    def test_each_caches_conan_under_the_submodule_commit(self):
+        # Guards test_cache_keys_do_not_hash_the_git_directory against passing
+        # vacuously, and pins what the key is actually derived from.
+        for name in WHEEL_WORKFLOWS:
+            with self.subTest(workflow=name):
+                caches = [step for _job, step in steps_of(load(name))
+                          if str(step.get('uses', '')).startswith(
+                              'actions/cache')]
+                self.assertEqual(1, len(caches))
+                self.assertIn('steps.slideio.outputs.sha',
+                              caches[0]['with']['key'])
 
 
 if __name__ == '__main__':

@@ -45,10 +45,9 @@ jobs:
       shell: bash
       working-directory: slideio
       # `git rev-parse HEAD:<path>` reads the gitlink out of the tree, so this
-      # works whether or not the submodule is initialised. It replaces hashing
-      # a path inside the submodule's internal git metadata directory, which
-      # hashFiles() turns into an empty string when the glob matches nothing,
-      # leaving restore-keys to hide the degraded key.
+      # works whether or not the submodule is initialised. It replaces
+      # hashFiles() on .git/modules/..., which returns an empty string when the
+      # glob matches nothing and leaves restore-keys hiding the degraded key.
       # safe.directory because git in a container refuses a tree it reads as
       # owned by someone else.
       run: |
@@ -82,9 +81,9 @@ jobs:
       # of it needs the shared image corpus. Set the SLIDEIO_IMAGES_PATH
       # repository variable to a path visible inside this container to enable
       # the step; with nothing to read there is nothing to test, so it is
-      # skipped. The env var that would turn a missing image into a skip stays
-      # unset on purpose: in CI a missing image must fail the run, not quietly
-      # skip the test that needed it.
+      # skipped. SLIDEIO_SKIP_MISSING_IMAGES stays unset on purpose: in CI a
+      # missing image must fail the run, not quietly skip the test that needed
+      # it.
       if: vars.SLIDEIO_IMAGES_PATH != ''
       shell: bash -el {0}
       env:
