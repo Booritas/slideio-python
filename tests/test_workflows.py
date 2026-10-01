@@ -79,15 +79,29 @@ def env_blocks(workflow):
 
 
 def sets_variable(workflow, variable):
-    """True if any env: block or `run:` shell assignment sets `variable`."""
+    """True if anything in the workflow sets `variable`.
+
+    Deliberately conservative: a guard against a variable silently coming
+    back should err towards failing.
+    """
     if any(variable in env for env in env_blocks(workflow)):
         return True
     # `VAR=x`, `export VAR=x`, `VAR=x cmd`, and the same after a ; && || pipe.
     assignment = re.compile(
         r'(?:^|[;&|]|\bexport\s+)\s*' + re.escape(variable) + r'\s*=',
         re.MULTILINE)
-    return any(assignment.search(str(step.get('run', '')))
-               for _job, step in steps_of(workflow))
+    for _job, step in steps_of(workflow):
+        run = str(step.get('run', ''))
+        if assignment.search(run):
+            return True
+        # The Actions idiom that exports a variable to every later step by
+        # appending to the file $GITHUB_ENV names -- `echo VAR=x >>
+        # "$GITHUB_ENV"`, or a heredoc into the same file. A step that
+        # mentions both the variable and GITHUB_ENV is treated as setting it;
+        # there is no other reason for one step to name both.
+        if 'GITHUB_ENV' in run and variable in run:
+            return True
+    return False
 
 
 class TestEveryWorkflow(unittest.TestCase):
@@ -184,6 +198,53 @@ class TestEveryWorkflow(unittest.TestCase):
                         or 'Set-Location $env:RUNNER_TEMP' in run,
                         'this pytest step never leaves the checkout')
         self.assertGreater(found, 0, 'no pytest step found at all')
+
+
+class TestSetsVariable(unittest.TestCase):
+    """Unit tests for the helper the two hygiene tests depend on.
+
+    Those tests can only fail; without these, a sets_variable() that never
+    returned True would make both of them pass vacuously.
+    """
+
+    def test_detects_a_workflow_level_env_entry(self):
+        self.assertTrue(sets_variable({'env': {'VAR': '1'}}, 'VAR'))
+
+    def test_detects_a_job_level_env_entry(self):
+        self.assertTrue(sets_variable(
+            {'jobs': {'build': {'env': {'VAR': '1'}}}}, 'VAR'))
+
+    def test_detects_a_step_level_env_entry(self):
+        self.assertTrue(sets_variable(
+            {'jobs': {'build': {'steps': [{'env': {'VAR': '1'}}]}}}, 'VAR'))
+
+    def test_detects_a_shell_assignment(self):
+        self.assertTrue(sets_variable(
+            {'jobs': {'build': {'steps': [{'run': 'export VAR=1\n'}]}}},
+            'VAR'))
+
+    def test_detects_the_github_env_idiom(self):
+        self.assertTrue(sets_variable(
+            {'jobs': {'build': {'steps': [
+                {'run': 'echo "VAR=1" >> "$GITHUB_ENV"\n'}]}}},
+            'VAR'))
+
+    def test_detects_a_heredoc_into_github_env(self):
+        self.assertTrue(sets_variable(
+            {'jobs': {'build': {'steps': [
+                {'run': 'cat >> "$GITHUB_ENV" <<EOF\nVAR=1\nEOF\n'}]}}},
+            'VAR'))
+
+    def test_a_comment_naming_the_variable_does_not_count(self):
+        # The reason these checks are structural at all: the workflows name
+        # SLIDEIO_SKIP_MISSING_IMAGES in a comment to explain why it is unset.
+        self.assertFalse(sets_variable(
+            {'jobs': {'build': {'steps': [
+                {'run': 'echo building  # VAR stays unset on purpose\n'}]}}},
+            'VAR'))
+
+    def test_a_similarly_named_variable_does_not_count(self):
+        self.assertFalse(sets_variable({'env': {'VAR_SUFFIX': '1'}}, 'VAR'))
 
 
 class TestWheelWorkflows(unittest.TestCase):
