@@ -109,9 +109,11 @@ def sets_variable(workflow, variable):
 class TestEveryWorkflow(unittest.TestCase):
     def test_the_wheel_workflows_are_all_present(self):
         # ALL_WORKFLOWS is discovered by glob; this is what stops every test in
-        # this class passing vacuously if the glob ever finds nothing.
+        # this class passing vacuously if the glob ever finds nothing. It
+        # guards the glob itself, not any one workflow's content, so it does
+        # not exercise every workflow the way its siblings in this class do.
         self.assertTrue(set(WHEEL_WORKFLOWS) <= set(ALL_WORKFLOWS),
-                        sorted(ALL_WORKFLOWS))
+                        'discovered: {}'.format(sorted(ALL_WORKFLOWS)))
 
     def test_all_parse(self):
         for name in ALL_WORKFLOWS:
@@ -420,6 +422,10 @@ class TestBuildValidation(unittest.TestCase):
                          set(self.workflow['jobs']))
 
     def test_one_platform_failing_does_not_hide_the_others(self):
+        # Guards against passing vacuously when run alone (e.g. under -k):
+        # four jobs are expected regardless of what the gate looks like on
+        # the day this runs, so an empty job set would be caught here first.
+        self.assertGreaterEqual(len(self.workflow['jobs']), 4)
         for name, job in self.workflow['jobs'].items():
             with self.subTest(job=name):
                 self.assertNotIn('needs', job)
@@ -434,10 +440,13 @@ class TestBuildValidation(unittest.TestCase):
         # forbid that explanation -- YAML comments are not in the parsed data,
         # so this surface cannot confuse the two.
         invocation = re.compile(r'build-wheels-\S*\.(?:sh|ps1)')
+        found = 0
         for job, step in steps_of(self.workflow):
+            found += 1
             with self.subTest(job=job):
                 self.assertIsNone(
                     invocation.search(str(step.get('run', ''))))
+        self.assertGreater(found, 0, 'no steps found at all')
 
     def test_every_platform_job_tests_the_wheel_behind_the_corpus_variable(
             self):
@@ -547,7 +556,12 @@ class TestRelease(unittest.TestCase):
         self.assertFalse(self.workflow['concurrency']['cancel-in-progress'])
 
     def test_the_version_is_checked_before_anything_builds(self):
-        self.assertIn('ci_version.py', str(self.jobs['check-version']))
+        # Checked against a step's own `run:` text rather than the whole
+        # job's repr, so a step `name:` or `description:` that merely
+        # mentioned ci_version.py could not satisfy this on its own.
+        ran = [step for step in self.jobs['check-version']['steps']
+               if 'ci_version.py' in str(step.get('run', ''))]
+        self.assertEqual(1, len(ran))
         for job in self.WHEEL_JOBS:
             with self.subTest(job=job):
                 self.assertIn('check-version', self.jobs[job]['needs'])
