@@ -5,3 +5,5 @@ numpy
 # tests/test_color.py round-trips the raw ICC bytes through an external
 # consumer to prove they are a real profile, not just non-empty.
 pillow
+# tests/test_workflows.py reads .github/workflows/*.yml to pin the CI structure.
+pyyaml

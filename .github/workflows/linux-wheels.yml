@@ -1,12 +1,24 @@
 name: Linux Wheels
 
 on:
+  # Callable by release.yml and still dispatchable by hand. The dispatch inputs
+  # are unchanged -- there are none -- so the manual experience is the same.
+  workflow_call:
+    inputs:
+      ci_pipeline_iid:
+        description: 'Patch component of the package version'
+        required: false
+        default: '0'
+        type: string
+      artifact_name:
+        description: 'Name of the uploaded wheel artifact'
+        required: false
+        default: 'wheels-manylinux_2_28-x86_64'
+        type: string
   workflow_dispatch:
 
-env:
-  CONAN_REVISIONS_ENABLED: 1
-  CONAN_DISABLE_CHECK_COMPILER: 1
-  SLIDEIO_HOME: ${{ github.workspace }}/slideio
+permissions:
+  contents: read
 
 jobs:
   build-linux:
@@ -15,6 +27,12 @@ jobs:
       # 2.10.0 ships a prebuilt conan cache for slideio's dependencies, which is
       # what makes building the C++ library from source in CI affordable.
       image: booritas/slideio-manylinux_2_28_x86_64:2.10.0
+
+    env:
+      # An input rather than an inherited variable: workflow-level env in the
+      # caller does not cross into a called workflow. setup.py:38-41 turns this
+      # into the wheel's patch component.
+      CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid || '0' }}
 
     steps:
     - name: checkout the repository
@@ -25,11 +43,26 @@ jobs:
         submodules: 'recursive'
         path: slideio
 
+    - name: resolve the slideio submodule commit
+      id: slideio
+      shell: bash
+      working-directory: slideio
+      # `git rev-parse HEAD:<path>` reads the gitlink out of the tree, so this
+      # works whether or not the submodule is initialised. It replaces
+      # hashFiles() on .git/modules/..., which returns an empty string when the
+      # glob matches nothing and leaves restore-keys hiding the degraded key.
+      # safe.directory because git in a container refuses a tree it reads as
+      # owned by someone else.
+      run: |
+        set -euo pipefail
+        git config --global --add safe.directory "$GITHUB_WORKSPACE/slideio"
+        echo "sha=$(git rev-parse HEAD:extern/slideio)" >> "$GITHUB_OUTPUT"
+
     - name: cache conan packages
       uses: actions/cache@v4
       with:
         path: ~/.conan2
-        key: conan-manylinux-${{ hashFiles('slideio/.git/modules/extern/slideio/HEAD') }}
+        key: conan-manylinux-${{ steps.slideio.outputs.sha }}
         restore-keys: |
           conan-manylinux-
 
@@ -47,19 +80,22 @@ jobs:
 
     - name: test the built wheel
       # tests/ covers the parts that exist only on the Python side of the
-      # binding -- everything else is tested in the C++ repository -- and it
-      # needs the shared image corpus. Set the SLIDEIO_IMAGES_PATH repository
-      # variable to a path visible inside this container to enable the step;
-      # with nothing to read there is nothing to test, so it is skipped.
-      # SLIDEIO_SKIP_MISSING_IMAGES stays unset on purpose: in CI a missing
-      # image must fail the run, not quietly skip the test that needed it.
+      # binding -- everything else is tested in the C++ repository -- and most
+      # of it needs the shared image corpus. Set the SLIDEIO_IMAGES_PATH
+      # repository variable to a path visible inside this container to enable
+      # the step; with nothing to read there is nothing to test, so it is
+      # skipped. SLIDEIO_SKIP_MISSING_IMAGES stays unset on purpose: in CI a
+      # missing image must fail the run, not quietly skip the test that needed
+      # it.
       if: vars.SLIDEIO_IMAGES_PATH != ''
       shell: bash -el {0}
       env:
         SLIDEIO_IMAGES_PATH: ${{ vars.SLIDEIO_IMAGES_PATH }}
       run: |
         py=/opt/python/cp312-cp312/bin/python
-        $py -m pip install pytest pillow numpy
+        # pyyaml for tests/test_workflows.py, which reads the workflow YAML and
+        # needs no wheel of its own.
+        $py -m pip install pytest pillow numpy pyyaml
         # The repaired wheel, not the work tree: this tests what ships.
         $py -m pip install --no-index \
           --find-links "$GITHUB_WORKSPACE/slideio/wheelhouse" slideio
@@ -70,5 +106,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-          name: wheels
-          path: ./slideio/wheelhouse
+        name: ${{ inputs.artifact_name || 'wheels-manylinux_2_28-x86_64' }}
+        path: ./slideio/wheelhouse
+        if-no-files-found: error
+        retention-days: 30

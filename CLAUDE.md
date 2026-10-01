@@ -20,6 +20,12 @@ turns a missing image into a skip, which is for local runs only — CI must leav
 it unset so coverage cannot disappear quietly. Only `0`, `false`, `no` and `off`
 count as "not set"; anything else enables skipping.
 
+Two files are exceptions to all of that: `tests/test_ci_version.py` and
+`tests/test_workflows.py` cover build and CI tooling, import from the repository
+root the way `tests/test_msvcredist.py` does, and need neither a built wheel nor
+the image corpus — so `pytest tests/test_ci_version.py tests/test_workflows.py`
+runs in a bare checkout.
+
 Run the suite from outside the checkout when testing an installed wheel. The
 repository root holds a `slideio/` package directory whose `core/libs/` a local
 build populates, and `import slideio` from there resolves to that source tree
@@ -106,9 +112,60 @@ Conan cache for slideio's dependencies.
 ### Multi-version wheel builds
 
 - All three scripts call `build-slideio.py` once before their Python-version loop; the loop itself only ever rebuilds the extension, never the C++ library.
-- `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.8–3.14 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
+- `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.9–3.14 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
 - `build-wheels-manylinux.sh`, `build-wheels-macos.sh` + `repair-wheels.sh`/`rename-macos-wheels.sh` for the other platforms.
-- CI: `.github/workflows/{windows,linux,macos}-wheels.yml`, all `workflow_dispatch`-triggered; they check out submodules recursively, cache `~/.conan2`, build the C++ library with `build-slideio.py`, then run the platform's wheel script. No Conan remote and no credentials are involved.
+- CI: `.github/workflows/{windows,linux,macos}-wheels.yml` build the full wheel
+  set for one platform. Each is triggered either by `workflow_dispatch` or by
+  `workflow_call` from `release.yml`, and takes three inputs when called:
+  `ci_pipeline_iid` (the version's patch component, default `'0'`),
+  `artifact_name`, and — macOS only — `os` (`macos-14` or `macos-15-intel`).
+  They check out submodules recursively, cache `~/.conan2` under the
+  `extern/slideio` commit, build the C++ library with `build-slideio.py`, then
+  run the platform's wheel script. No Conan remote and no credentials are
+  involved.
+
+### CI
+
+Two workflows, mirroring the C++ repository's split.
+
+`build-validation.yml` is the per-commit gate: push and pull request against
+`main`, plus manual dispatch, with `cancel-in-progress` so a new push supersedes
+the old run. An ungated `tooling` job runs `tests/test_ci_version.py` and
+`tests/test_workflows.py` on every run, since those two need neither a built
+wheel nor the image corpus. Three further, independent jobs — manylinux in the
+pinned container, macOS arm64, Windows — each build the C++ library and **one**
+Python 3.12 wheel, then run `tests/` against it **when the
+`SLIDEIO_IMAGES_PATH` repository variable is set**; unset, each still builds
+its wheel but skips that step. No job has `needs`, so one platform failing
+does not hide the other two, and no job runs a `build-wheels-*` script: the
+3.9–3.14 loop is roughly six times the work and belongs to a release. The
+Windows job calls `Repair-Naming` from `lib.ps1` after building, because an
+unrepaired Windows wheel does not import.
+
+`release.yml` runs on `v*` tags and on dispatch. `check-version` runs
+`ci_version.py`, which reads `MAJOR.MINOR` from `CMakeLists.txt` and takes the
+patch from the tag, so `v2.10.3` against `projectVersion 2.10` yields
+`CI_PIPELINE_IID=3` and `slideio-2.10.3` wheels — **cutting a patch release
+needs no file edit, only a tag**, and a tag that disagrees with `CMakeLists.txt`
+fails before any platform builds. It then calls the four wheel legs and, on a
+tag push only, publishes a draft Release with every wheel attached. A manual
+dispatch is a full rehearsal that cannot publish: the publish job requires
+`github.event_name == 'push'` as well as `github.ref_type == 'tag'`, because the
+dispatch API accepts a tag ref as readily as a branch. PyPI upload remains
+manual.
+
+Both halves of the structure are pinned by `tests/test_workflows.py`, which
+reads the YAML — artifact names distinct and non-empty, `SLIDEIO_HOME` and the
+other dead variables gone, `SLIDEIO_SKIP_MISSING_IMAGES` never set, every pytest
+step leaving the checkout first, the publish gate intact. Those checks read
+parsed structure — `env:` blocks, shell assignments in `run:` steps,
+`actions/cache` key fields, each job's own `run:` text — rather than the raw
+file text, which is deliberate: the workflows name
+`SLIDEIO_SKIP_MISSING_IMAGES`, `hashFiles() on .git/modules` and
+`build-wheels-macos.sh` in comments precisely to explain why each is absent or
+unused, and a substring check over the file would forbid the explanation along
+with the mistake. Note that PyYAML parses the bare key `on:` as the boolean
+`True`; the module's `triggers()` helper exists for that.
 
 ## Version bumps
 
@@ -124,3 +181,10 @@ python build-slideio.py --force
 
 The Python package MAJOR.MINOR comes from `projectVersion` in `CMakeLists.txt`
 and should track the C++ version it is pinned to.
+
+Releasing is a tag: `git tag v2.10.3 && git push origin v2.10.3` runs
+`release.yml`, which derives `2.10.3` from the tag, builds every platform's
+wheels and opens a **draft** Release with them attached. The tag's `MAJOR.MINOR`
+must equal `projectVersion`, or `check-version` fails the run before anything
+builds. `ci_version.py` reports what a given tag would produce:
+`GITHUB_REF_TYPE=tag GITHUB_REF_NAME=v2.10.3 python ci_version.py`.
