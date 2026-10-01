@@ -6,11 +6,25 @@ name: Build Validation
 #
 # release.yml is the other half and is untouched by anything here.
 
+# Documentation changes skip the gate. Nothing under docs/ and no Markdown file
+# reaches a wheel -- CLAUDE.md included, which is why the pattern is `**/*.md`
+# rather than a path -- and a prose-only commit otherwise costs a full C++ build
+# on three platforms, about 45 minutes of runner time. The `tooling` job is
+# skipped along with the rest, which is the one real cost: a commit that touched
+# only a Markdown file could in principle break tests/test_workflows.py through
+# nothing but its own text, and would not be caught until the next code change.
+# No workflow or test file matches either pattern, so that stays hypothetical.
+#
+# Note for anyone adding branch protection later: a run skipped by paths-ignore
+# reports no status at all, so naming these jobs as required checks would leave a
+# docs-only pull request waiting forever.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
 
 permissions:
