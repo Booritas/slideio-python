@@ -1,0 +1,170 @@
+name: Release
+
+# Builds every platform's wheels for a version tag and attaches them to a draft
+# GitHub Release:
+#
+#   wheels-manylinux_2_28-x86_64   CPython 3.9-3.14, glibc 2.28 floor
+#   wheels-macos-arm64             CPython 3.9-3.14
+#   wheels-macos-x86_64            CPython 3.9-3.13
+#   wheels-windows-x86_64          CPython 3.9-3.14
+#
+# The wheels themselves are built by the three per-platform workflows, which
+# this one calls rather than copies -- each platform's quirks stay in one place.
+# build-validation.yml remains the per-commit gate and is untouched.
+#
+# PyPI upload is still manual; nothing here talks to an index.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Which platforms to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
+          - manylinux
+
+# A manual run cannot publish: the publish job is gated on the event being a tag
+# push, and a tag push never carries inputs. So the knob above only ever
+# shortens a rehearsal, and it cannot put an untested artifact on a release page
+# -- not even a manual run started against a tag ref, which the dispatch API
+# accepts as readily as a branch.
+#
+# Note that GitHub offers the "Run workflow" button only for workflow files that
+# exist on the default branch. Until this file is merged to main it cannot be
+# dispatched from anywhere, including from its own branch.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Unlike the gate: a half-cancelled release is worse than two of them.
+  cancel-in-progress: false
+
+jobs:
+  # A tag is the only thing that says which version is being released, and
+  # CMakeLists.txt is the only thing that says which MAJOR.MINOR is being built.
+  # They have to agree before four platforms spend an hour producing wheels
+  # whose names would otherwise be wrong. ci_version.py owns the rules and is
+  # unit-tested in tests/test_ci_version.py.
+  check-version:
+    name: Check version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      patch: ${{ steps.version.outputs.patch }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: derive the package version from the tag
+        id: version
+        run: python ci_version.py
+
+  wheels-manylinux:
+    name: manylinux_2_28 x86_64
+    needs: check-version
+    # A dispatch can ask for one platform; a tag push carries no inputs and so
+    # builds everything.
+    if: contains(fromJson('["all","manylinux"]'), inputs.platforms || 'all')
+    uses: ./.github/workflows/linux-wheels.yml
+    with:
+      ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
+      artifact_name: wheels-manylinux_2_28-x86_64
+
+  wheels-macos-arm64:
+    name: macOS arm64
+    needs: check-version
+    if: contains(fromJson('["all","macos"]'), inputs.platforms || 'all')
+    uses: ./.github/workflows/macos-wheels.yml
+    with:
+      os: macos-14
+      ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
+      artifact_name: wheels-macos-arm64
+
+  wheels-macos-x86_64:
+    name: macOS x86_64
+    needs: check-version
+    if: contains(fromJson('["all","macos"]'), inputs.platforms || 'all')
+    uses: ./.github/workflows/macos-wheels.yml
+    with:
+      os: macos-15-intel
+      ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
+      artifact_name: wheels-macos-x86_64
+
+  wheels-windows:
+    name: Windows x86_64
+    needs: check-version
+    if: contains(fromJson('["all","windows"]'), inputs.platforms || 'all')
+    uses: ./.github/workflows/windows-wheels.yml
+    with:
+      ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
+      artifact_name: wheels-windows-x86_64
+
+  publish:
+    name: Publish release
+    needs:
+      - check-version
+      - wheels-manylinux
+      - wheels-macos-arm64
+      - wheels-macos-x86_64
+      - wheels-windows
+    # Only a tag *push* publishes. A manual run stops after the wheels, having
+    # produced and tested every artifact -- which is what makes it a usable
+    # rehearsal.
+    #
+    # Both halves of this condition are load-bearing. github.ref_type alone is
+    # not enough: the dispatch API takes a tag as readily as a branch, so a
+    # manual run started against v2.10.3 also reports ref_type == 'tag'. It
+    # would reach this job carrying whatever the inputs asked for and publish a
+    # release built from one platform. Requiring event_name == 'push' is what
+    # makes "a manual run cannot publish" true rather than merely usually true.
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: download every platform's wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: list what will be published
+        run: ls -la dist
+
+      - name: create the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          name: slideio ${{ needs.check-version.outputs.version }}
+          draft: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            Python wheels for slideio ${{ needs.check-version.outputs.version }}.
+
+            | Platform | Wheels |
+            |---|---|
+            | Linux x86_64 (manylinux_2_28) | CPython 3.9–3.14 |
+            | macOS arm64 | CPython 3.9–3.14 |
+            | macOS x86_64 | CPython 3.9–3.13 |
+            | Windows x86_64 | CPython 3.9–3.14 |
+
+            Install a downloaded file directly:
+
+            ```
+            pip install ./slideio-${{ needs.check-version.outputs.version }}-cp312-cp312-*.whl
+            ```
+
+            The PyPI upload for this version is made separately.

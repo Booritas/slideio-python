@@ -392,5 +392,95 @@ class TestBuildValidation(unittest.TestCase):
                             for step in steps))
 
 
+class TestRelease(unittest.TestCase):
+    WHEEL_JOBS = ('wheels-manylinux', 'wheels-macos-arm64',
+                  'wheels-macos-x86_64', 'wheels-windows')
+
+    def setUp(self):
+        self.workflow = load('release.yml')
+        self.jobs = self.workflow['jobs']
+
+    def test_triggers_on_version_tags_and_dispatch(self):
+        on = triggers(self.workflow)
+        self.assertEqual(['v*'], on['push']['tags'])
+        self.assertIn('workflow_dispatch', on)
+
+    def test_does_not_cancel_a_running_release(self):
+        # A half-cancelled release is worse than two of them.
+        self.assertFalse(self.workflow['concurrency']['cancel-in-progress'])
+
+    def test_the_version_is_checked_before_anything_builds(self):
+        self.assertIn('ci_version.py', str(self.jobs['check-version']))
+        for job in self.WHEEL_JOBS:
+            with self.subTest(job=job):
+                self.assertIn('check-version', self.jobs[job]['needs'])
+
+    def test_each_leg_calls_a_wheel_workflow_with_the_derived_patch(self):
+        expected = {
+            'wheels-manylinux': './.github/workflows/linux-wheels.yml',
+            'wheels-macos-arm64': './.github/workflows/macos-wheels.yml',
+            'wheels-macos-x86_64': './.github/workflows/macos-wheels.yml',
+            'wheels-windows': './.github/workflows/windows-wheels.yml',
+        }
+        for job, uses in expected.items():
+            with self.subTest(job=job):
+                self.assertEqual(uses, self.jobs[job]['uses'])
+                self.assertEqual('${{ needs.check-version.outputs.patch }}',
+                                 self.jobs[job]['with']['ci_pipeline_iid'])
+
+    def test_every_leg_uploads_under_a_distinct_name(self):
+        names = [self.jobs[job]['with']['artifact_name']
+                 for job in self.WHEEL_JOBS]
+        self.assertEqual(len(names), len(set(names)))
+        for name in names:
+            self.assertTrue(name.startswith('wheels-'), name)
+
+    def test_both_macos_architectures_are_built(self):
+        self.assertEqual('macos-14',
+                         self.jobs['wheels-macos-arm64']['with']['os'])
+        self.assertEqual('macos-15-intel',
+                         self.jobs['wheels-macos-x86_64']['with']['os'])
+
+    def test_a_tag_push_builds_every_platform(self):
+        # A tag push carries no inputs, so `inputs.platforms || 'all'` has to
+        # fall back to 'all' in every leg's condition.
+        for job in self.WHEEL_JOBS:
+            with self.subTest(job=job):
+                self.assertIn("inputs.platforms || 'all'", self.jobs[job]['if'])
+
+    def test_a_manual_run_cannot_publish(self):
+        # Both halves are load-bearing: the dispatch API accepts a tag ref as
+        # readily as a branch, so github.ref_type alone would let a manual
+        # one-platform run publish a release.
+        condition = self.jobs['publish']['if']
+        self.assertIn("github.event_name == 'push'", condition)
+        self.assertIn("github.ref_type == 'tag'", condition)
+
+    def test_publish_waits_for_every_platform(self):
+        self.assertEqual({'check-version'} | set(self.WHEEL_JOBS),
+                         set(self.jobs['publish']['needs']))
+
+    def test_publish_can_write_releases(self):
+        self.assertEqual('write',
+                         self.jobs['publish']['permissions']['contents'])
+
+    def test_publish_downloads_every_wheel_artifact(self):
+        downloads = [step for step in self.jobs['publish']['steps']
+                     if str(step.get('uses', '')).startswith(
+                         'actions/download-artifact')]
+        self.assertEqual(1, len(downloads))
+        self.assertEqual('wheels-*', downloads[0]['with']['pattern'])
+        self.assertTrue(downloads[0]['with']['merge-multiple'])
+
+    def test_publish_creates_a_reviewable_draft(self):
+        releases = [step for step in self.jobs['publish']['steps']
+                    if str(step.get('uses', '')).startswith(
+                        'softprops/action-gh-release')]
+        self.assertEqual(1, len(releases))
+        parameters = releases[0]['with']
+        self.assertTrue(parameters['draft'])
+        self.assertTrue(parameters['fail_on_unmatched_files'])
+
+
 if __name__ == '__main__':
     unittest.main()
