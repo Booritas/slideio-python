@@ -17,6 +17,9 @@ on:
         type: string
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -29,7 +32,7 @@ jobs:
       # An input rather than an inherited variable: workflow-level env in the
       # caller does not cross into a called workflow. setup.py:38-41 turns this
       # into the wheel's patch component.
-      CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid }}
+      CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid || '0' }}
 
     steps:
     - name: checkout the repository
@@ -103,7 +106,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact_name }}
+        name: ${{ inputs.artifact_name || 'wheels-manylinux_2_28-x86_64' }}
         path: ./slideio/wheelhouse
         if-no-files-found: error
         retention-days: 30

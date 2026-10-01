@@ -17,7 +17,11 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# append, not insert(0, ...): this must not sort ahead of site-packages and
+# shadow an installed slideio with the source tree for the rest of the pytest
+# session. Nothing in site-packages provides `msvcredist`, so appending still
+# finds it.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import msvcredist  # noqa: E402
 

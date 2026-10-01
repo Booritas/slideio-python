@@ -130,13 +130,17 @@ Two workflows, mirroring the C++ repository's split.
 
 `build-validation.yml` is the per-commit gate: push and pull request against
 `main`, plus manual dispatch, with `cancel-in-progress` so a new push supersedes
-the old run. Three independent jobs — manylinux in the pinned container, macOS
-arm64, Windows — each build the C++ library and **one** Python 3.12 wheel, then
-run `tests/` against it. No job has `needs`, so one platform failing does not
-hide the other two, and no job runs a `build-wheels-*` script: the 3.9–3.14 loop
-is roughly six times the work and belongs to a release. The Windows job calls
-`Repair-Naming` from `lib.ps1` after building, because an unrepaired Windows
-wheel does not import.
+the old run. An ungated `tooling` job runs `tests/test_ci_version.py` and
+`tests/test_workflows.py` on every run, since those two need neither a built
+wheel nor the image corpus. Three further, independent jobs — manylinux in the
+pinned container, macOS arm64, Windows — each build the C++ library and **one**
+Python 3.12 wheel, then run `tests/` against it **when the
+`SLIDEIO_IMAGES_PATH` repository variable is set**; unset, each still builds
+its wheel but skips that step. No job has `needs`, so one platform failing
+does not hide the other two, and no job runs a `build-wheels-*` script: the
+3.9–3.14 loop is roughly six times the work and belongs to a release. The
+Windows job calls `Repair-Naming` from `lib.ps1` after building, because an
+unrepaired Windows wheel does not import.
 
 `release.yml` runs on `v*` tags and on dispatch. `check-version` runs
 `ci_version.py`, which reads `MAJOR.MINOR` from `CMakeLists.txt` and takes the

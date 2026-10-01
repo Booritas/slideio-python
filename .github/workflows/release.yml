@@ -41,6 +41,10 @@ on:
 # exist on the default branch. Until this file is merged to main it cannot be
 # dispatched from anywhere, including from its own branch.
 
+# The `publish` job below raises this to `contents: write` for itself.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # Unlike the gate: a half-cancelled release is worse than two of them.
@@ -74,7 +78,7 @@ jobs:
     needs: check-version
     # A dispatch can ask for one platform; a tag push carries no inputs and so
     # builds everything.
-    if: contains(fromJson('["all","manylinux"]'), inputs.platforms || 'all')
+    if: contains(fromJson('["all","manylinux"]'), github.event.inputs.platforms || 'all')
     uses: ./.github/workflows/linux-wheels.yml
     with:
       ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
@@ -83,7 +87,7 @@ jobs:
   wheels-macos-arm64:
     name: macOS arm64
     needs: check-version
-    if: contains(fromJson('["all","macos"]'), inputs.platforms || 'all')
+    if: contains(fromJson('["all","macos"]'), github.event.inputs.platforms || 'all')
     uses: ./.github/workflows/macos-wheels.yml
     with:
       os: macos-14
@@ -93,7 +97,7 @@ jobs:
   wheels-macos-x86_64:
     name: macOS x86_64
     needs: check-version
-    if: contains(fromJson('["all","macos"]'), inputs.platforms || 'all')
+    if: contains(fromJson('["all","macos"]'), github.event.inputs.platforms || 'all')
     uses: ./.github/workflows/macos-wheels.yml
     with:
       os: macos-15-intel
@@ -103,7 +107,7 @@ jobs:
   wheels-windows:
     name: Windows x86_64
     needs: check-version
-    if: contains(fromJson('["all","windows"]'), inputs.platforms || 'all')
+    if: contains(fromJson('["all","windows"]'), github.event.inputs.platforms || 'all')
     uses: ./.github/workflows/windows-wheels.yml
     with:
       ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}

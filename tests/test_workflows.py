@@ -28,10 +28,12 @@ WHEEL_WORKFLOWS = ('linux-wheels.yml', 'macos-wheels.yml',
 # Discovered rather than listed, so the hygiene tests below cover whatever
 # workflows exist -- including build-validation.yml and release.yml once
 # later work adds them, and any workflow a future change adds without these
-# properties.
+# properties. Both extensions GitHub Actions recognises, so a workflow added
+# as *.yaml does not silently escape every test in this file.
 ALL_WORKFLOWS = tuple(sorted(
     os.path.basename(path)
-    for path in glob.glob(os.path.join(WORKFLOW_DIR, '*.yml'))))
+    for pattern in ('*.yml', '*.yaml')
+    for path in glob.glob(os.path.join(WORKFLOW_DIR, pattern))))
 
 
 def read(name):
@@ -181,13 +183,69 @@ class TestEveryWorkflow(unittest.TestCase):
                     self.assertEqual('error',
                                      parameters.get('if-no-files-found'))
 
+    def test_upload_names_survive_a_manual_dispatch(self):
+        # workflow_call input defaults are not applied on a workflow_dispatch
+        # run: the inputs context is built from the triggering event's own
+        # input definitions. So `name: ${{ inputs.artifact_name }}` alone
+        # evaluates empty on a manual run and upload-artifact@v4 rejects it --
+        # after the 20-40 minute build. Every upload name must therefore be a
+        # literal or carry its own `||` fallback.
+        for name in ALL_WORKFLOWS:
+            for job, step in steps_of(load(name)):
+                if not str(step.get('uses', '')).startswith(
+                        'actions/upload-artifact'):
+                    continue
+                with self.subTest(workflow=name, job=job):
+                    value = str(step.get('with', {}).get('name', ''))
+                    self.assertTrue(value, 'upload has no name at all')
+                    if '${{' in value:
+                        self.assertIn('||', value, value)
+
+    def test_no_test_module_prepends_the_repository_root(self):
+        # A path call of the forbidden shape in any test module shadows an
+        # installed slideio with the source tree for the whole pytest process,
+        # which in CI aborts collection: the source tree's core/libs/ is built,
+        # not committed. Appending finds the root-level build-tooling modules
+        # without displacing site-packages.
+        forbidden = 'sys.path.insert'
+        this_file = os.path.basename(__file__)
+        tests_dir = os.path.dirname(os.path.abspath(__file__))
+        for path in sorted(glob.glob(os.path.join(tests_dir, '*.py'))):
+            name = os.path.basename(path)
+            if name == this_file:
+                # This test has to name the forbidden call in order to check
+                # for it, so it is necessarily exempt from its own scan.
+                continue
+            with open(path, encoding='utf-8') as handle:
+                source = handle.read()
+            with self.subTest(module=name):
+                self.assertNotIn(forbidden, source)
+
+    def test_every_workflow_defaults_to_read_only(self):
+        # Least privilege: with no top-level default, every job -- including
+        # the four called wheel workflows -- would inherit the repository's
+        # default GITHUB_TOKEN permission, which on an older repository is
+        # read/write across all scopes. release.yml's `publish` job still
+        # raises this to `write` for itself.
+        for name in ALL_WORKFLOWS:
+            with self.subTest(workflow=name):
+                permissions = load(name).get('permissions')
+                self.assertIsInstance(permissions, dict)
+                self.assertEqual('read', permissions.get('contents'))
+
     def test_pytest_always_runs_from_outside_the_checkout(self):
         # The repository root holds a slideio/ package directory, so pytest run
         # from inside the checkout imports the source tree rather than the
-        # installed wheel (CLAUDE.md).
+        # installed wheel (CLAUDE.md). The `tooling` job is exempt: by design
+        # (CLAUDE.md) it runs tests/test_ci_version.py and
+        # tests/test_workflows.py directly against the checkout -- neither
+        # imports slideio, so there is no installed wheel for the source tree
+        # to shadow.
         found = 0
         for name in ALL_WORKFLOWS:
             for job, step in steps_of(load(name)):
+                if job == 'tooling':
+                    continue
                 run = str(step.get('run', ''))
                 if 'pytest' not in run:
                     continue
@@ -274,8 +332,9 @@ class TestWheelWorkflows(unittest.TestCase):
     def test_patch_reaches_the_build_environment(self):
         for name in WHEEL_WORKFLOWS:
             with self.subTest(workflow=name):
-                self.assertIn('CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid }}',
-                              read(name))
+                self.assertIn(
+                    "CI_PIPELINE_IID: ${{ inputs.ci_pipeline_iid || '0' }}",
+                    read(name))
 
     def test_default_artifact_names_are_distinct(self):
         defaults = [
@@ -287,9 +346,20 @@ class TestWheelWorkflows(unittest.TestCase):
             self.assertTrue(default.startswith('wheels-'), default)
 
     def test_uploads_use_the_artifact_name_input(self):
+        # Each site also carries its own `||` fallback: workflow_call input
+        # defaults are not applied on a workflow_dispatch run (C1), so the bare
+        # input alone would evaluate empty on a manual run.
+        defaults = {
+            'linux-wheels.yml': 'wheels-manylinux_2_28-x86_64',
+            'macos-wheels.yml': 'wheels-macos-arm64',
+            'windows-wheels.yml': 'wheels-windows-x86_64',
+        }
         for name in WHEEL_WORKFLOWS:
             with self.subTest(workflow=name):
-                self.assertIn('name: ${{ inputs.artifact_name }}', read(name))
+                self.assertIn(
+                    "name: ${{{{ inputs.artifact_name || '{}' }}}}".format(
+                        defaults[name]),
+                    read(name))
 
     def test_macos_runner_comes_from_the_inputs_context(self):
         # github.event.inputs is empty under workflow_call, so a job whose
@@ -324,6 +394,12 @@ class TestWheelWorkflows(unittest.TestCase):
 
 
 class TestBuildValidation(unittest.TestCase):
+    # The three platform jobs that ship a wheel. `tooling` is deliberately
+    # excluded: it needs neither a built wheel nor submodules, so it is exempt
+    # from the per-platform assertions below rather than a fourth member of
+    # that set.
+    PLATFORM_JOBS = ('manylinux', 'macos', 'windows')
+
     def setUp(self):
         self.workflow = load('build-validation.yml')
 
@@ -337,8 +413,12 @@ class TestBuildValidation(unittest.TestCase):
         self.assertTrue(self.workflow['concurrency']['cancel-in-progress'])
 
     def test_builds_the_three_shipped_platforms(self):
-        self.assertEqual({'manylinux', 'macos', 'windows'},
-                         set(self.workflow['jobs']))
+        # Present, not exhaustive: the `tooling` job (I1) also lives in this
+        # file's job set, and adding it must not make this assertion vacuous
+        # about the three platforms it was written to pin.
+        self.assertTrue(
+            set(self.PLATFORM_JOBS) <= set(self.workflow['jobs']),
+            set(self.workflow['jobs']))
 
     def test_one_platform_failing_does_not_hide_the_others(self):
         for name, job in self.workflow['jobs'].items():
@@ -360,16 +440,33 @@ class TestBuildValidation(unittest.TestCase):
                 self.assertIsNone(
                     invocation.search(str(step.get('run', ''))))
 
-    def test_every_job_tests_the_wheel_behind_the_corpus_variable(self):
-        for name, job in self.workflow['jobs'].items():
+    def test_every_platform_job_tests_the_wheel_behind_the_corpus_variable(
+            self):
+        for name in self.PLATFORM_JOBS:
+            job = self.workflow['jobs'][name]
             with self.subTest(job=name):
                 tested = [step for step in job['steps']
                           if 'pytest' in str(step.get('run', ''))]
                 self.assertEqual(1, len(tested))
                 self.assertIn('vars.SLIDEIO_IMAGES_PATH', tested[0]['if'])
 
-    def test_every_job_checks_out_submodules_recursively(self):
-        for name, job in self.workflow['jobs'].items():
+    def test_tooling_job_tests_are_ungated(self):
+        # The point of I1: tests/test_ci_version.py and tests/test_workflows.py
+        # need neither a built wheel nor the image corpus, so unlike the
+        # platform jobs' pytest step, this one must run unconditionally.
+        #
+        # Matched on "pytest tests/", not bare "pytest": the preceding step's
+        # `pip install pytest pyyaml` also contains "pytest", so a plain
+        # substring search over every step would find two.
+        steps = self.workflow['jobs']['tooling']['steps']
+        tested = [step for step in steps
+                  if 'pytest tests/' in str(step.get('run', ''))]
+        self.assertEqual(1, len(tested))
+        self.assertNotIn('if', tested[0])
+
+    def test_every_platform_job_checks_out_submodules_recursively(self):
+        for name in self.PLATFORM_JOBS:
+            job = self.workflow['jobs'][name]
             with self.subTest(job=name):
                 checkouts = [step for step in job['steps']
                              if str(step.get('uses', '')).startswith(
@@ -378,18 +475,45 @@ class TestBuildValidation(unittest.TestCase):
                 self.assertEqual('recursive',
                                  checkouts[0]['with']['submodules'])
 
+    def test_tooling_job_checks_out_without_submodules(self):
+        # Deliberate: the tooling job needs neither extern/slideio nor its
+        # four submodules of its own.
+        steps = self.workflow['jobs']['tooling']['steps']
+        checkouts = [step for step in steps
+                     if str(step.get('uses', '')).startswith(
+                         'actions/checkout')]
+        self.assertEqual(1, len(checkouts))
+        self.assertNotIn('submodules', checkouts[0].get('with', {}) or {})
+
     def test_windows_repairs_the_pyd_name_inside_the_wheel(self):
         # lib.ps1:47 renames slideiopybind*.pyd to the name the package
         # imports; an unrepaired Windows wheel does not import at all, so a
         # gate that skipped this would be testing something that never ships.
+        # Ordering matters as much as presence: a repair step that ran after
+        # the wheel was already tested would turn the gate green against an
+        # uninstallable artifact.
         steps = self.workflow['jobs']['windows']['steps']
-        self.assertTrue(any('Repair-Naming' in str(step.get('run', ''))
-                            for step in steps))
+        repair_index = next(
+            (i for i, step in enumerate(steps)
+             if 'Repair-Naming' in str(step.get('run', ''))), None)
+        test_index = next(
+            (i for i, step in enumerate(steps)
+             if 'pytest' in str(step.get('run', ''))), None)
+        self.assertIsNotNone(repair_index, 'no Repair-Naming step found')
+        self.assertIsNotNone(test_index, 'no pytest step found')
+        self.assertLess(repair_index, test_index)
 
     def test_manylinux_repairs_the_wheel_before_testing_it(self):
         steps = self.workflow['jobs']['manylinux']['steps']
-        self.assertTrue(any('auditwheel repair' in str(step.get('run', ''))
-                            for step in steps))
+        repair_index = next(
+            (i for i, step in enumerate(steps)
+             if 'auditwheel repair' in str(step.get('run', ''))), None)
+        test_index = next(
+            (i for i, step in enumerate(steps)
+             if 'pytest' in str(step.get('run', ''))), None)
+        self.assertIsNotNone(repair_index, 'no auditwheel repair step found')
+        self.assertIsNotNone(test_index, 'no pytest step found')
+        self.assertLess(repair_index, test_index)
 
 
 class TestRelease(unittest.TestCase):
