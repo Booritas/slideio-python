@@ -202,24 +202,22 @@ class TestEveryWorkflow(unittest.TestCase):
                         self.assertIn('||', value, value)
 
     def test_no_test_module_prepends_the_repository_root(self):
-        # A path call of the forbidden shape in any test module shadows an
-        # installed slideio with the source tree for the whole pytest process,
-        # which in CI aborts collection: the source tree's core/libs/ is built,
-        # not committed. Appending finds the root-level build-tooling modules
-        # without displacing site-packages.
-        forbidden = 'sys.path.insert'
-        this_file = os.path.basename(__file__)
+        # A module-level sys.path.insert(0, <repo root>) in any test module
+        # shadows an installed slideio with the source tree for the whole
+        # pytest process, which in CI aborts collection: the source tree's
+        # core/libs/ is built, not committed. Appending finds the root-level
+        # build-tooling modules without displacing site-packages.
+        #
+        # Anchored to the start of a line, so this file needs no exemption
+        # from its own scan: a real statement is line-initial, while the
+        # mentions of it just above and below are indented.
+        prepends = re.compile(r'^sys\.path\.insert', re.MULTILINE)
         tests_dir = os.path.dirname(os.path.abspath(__file__))
         for path in sorted(glob.glob(os.path.join(tests_dir, '*.py'))):
-            name = os.path.basename(path)
-            if name == this_file:
-                # This test has to name the forbidden call in order to check
-                # for it, so it is necessarily exempt from its own scan.
-                continue
             with open(path, encoding='utf-8') as handle:
                 source = handle.read()
-            with self.subTest(module=name):
-                self.assertNotIn(forbidden, source)
+            with self.subTest(module=os.path.basename(path)):
+                self.assertIsNone(prepends.search(source))
 
     def test_every_workflow_defaults_to_read_only(self):
         # Least privilege: with no top-level default, every job -- including
@@ -413,12 +411,13 @@ class TestBuildValidation(unittest.TestCase):
         self.assertTrue(self.workflow['concurrency']['cancel-in-progress'])
 
     def test_builds_the_three_shipped_platforms(self):
-        # Present, not exhaustive: the `tooling` job (I1) also lives in this
-        # file's job set, and adding it must not make this assertion vacuous
-        # about the three platforms it was written to pin.
-        self.assertTrue(
-            set(self.PLATFORM_JOBS) <= set(self.workflow['jobs']),
-            set(self.workflow['jobs']))
+        # Still exact, with the ungated `tooling` job (I1) admitted: the job
+        # set is the three platforms plus `tooling`, nothing else. This is
+        # also what keeps the two vacuity-prone tests in this class
+        # (test_no_job_runs_a_full_wheel_script,
+        # test_one_platform_failing_does_not_hide_the_others) from mattering.
+        self.assertEqual(set(self.PLATFORM_JOBS) | {'tooling'},
+                         set(self.workflow['jobs']))
 
     def test_one_platform_failing_does_not_hide_the_others(self):
         for name, job in self.workflow['jobs'].items():
@@ -463,6 +462,20 @@ class TestBuildValidation(unittest.TestCase):
                   if 'pytest tests/' in str(step.get('run', ''))]
         self.assertEqual(1, len(tested))
         self.assertNotIn('if', tested[0])
+
+    def test_the_tooling_job_runs_only_the_corpus_free_files(self):
+        # test_pytest_always_runs_from_outside_the_checkout exempts this job,
+        # because it runs pytest from inside the checkout. That is safe only
+        # while the files it names import no slideio -- so the exemption is
+        # paired with pinning the invocation. Broadening it to `pytest tests/`
+        # would re-shadow the installed wheel with the source tree.
+        steps = self.workflow['jobs']['tooling']['steps']
+        tested = [str(step.get('run', '')) for step in steps
+                  if 'pytest tests/' in str(step.get('run', ''))]
+        self.assertEqual(1, len(tested))
+        self.assertEqual(
+            ['tests/test_ci_version.py', 'tests/test_workflows.py'],
+            sorted(re.findall(r'tests/\S+\.py', tested[0])))
 
     def test_every_platform_job_checks_out_submodules_recursively(self):
         for name in self.PLATFORM_JOBS:
