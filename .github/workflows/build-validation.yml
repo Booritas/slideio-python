@@ -114,7 +114,7 @@ jobs:
         python-version: '3.12'
 
     - name: install python dependencies
-      # No conda here: the macOS wheel script needs it to make one environment
+      # No conda here: build-wheels-macos.sh needs it to make one environment
       # per Python version, and this job builds exactly one wheel.
       run: python -m pip install -U pip conan distro build
 

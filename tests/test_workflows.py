@@ -294,9 +294,13 @@ class TestWheelWorkflows(unittest.TestCase):
     def test_macos_runner_comes_from_the_inputs_context(self):
         # github.event.inputs is empty under workflow_call, so a job whose
         # runs-on reads it would fail to start.
-        text = read('macos-wheels.yml')
-        self.assertNotIn('github.event.inputs', text)
-        self.assertIn('runs-on: ${{ inputs.os }}', text)
+        #
+        # Read from the parsed job rather than the file text, so a comment may
+        # name github.event.inputs to explain why it is not used.
+        jobs = load('macos-wheels.yml')['jobs']
+        self.assertEqual(1, len(jobs))
+        self.assertEqual('${{ inputs.os }}',
+                         next(iter(jobs.values()))['runs-on'])
 
     def test_macos_offers_both_architectures_to_both_triggers(self):
         on = triggers(load('macos-wheels.yml'))
@@ -344,7 +348,17 @@ class TestBuildValidation(unittest.TestCase):
     def test_no_job_runs_a_full_wheel_script(self):
         # The gate builds one wheel per platform; the 3.9-3.14 loop the wheel
         # scripts run is roughly six times the cost.
-        self.assertNotIn('build-wheels-', read('build-validation.yml'))
+        #
+        # Checked against the steps' own `run:` text rather than the whole
+        # file. The macOS job's comment names build-wheels-macos.sh to explain
+        # why it does not use conda, and a substring check over the file would
+        # forbid that explanation -- YAML comments are not in the parsed data,
+        # so this surface cannot confuse the two.
+        invocation = re.compile(r'build-wheels-\S*\.(?:sh|ps1)')
+        for job, step in steps_of(self.workflow):
+            with self.subTest(job=job):
+                self.assertIsNone(
+                    invocation.search(str(step.get('run', ''))))
 
     def test_every_job_tests_the_wheel_behind_the_corpus_variable(self):
         for name, job in self.workflow['jobs'].items():
