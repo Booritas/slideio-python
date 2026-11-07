@@ -48,6 +48,7 @@ The following table lists the currently implemented drivers and their correspond
 | **QPTIFF** | PerkinElmer Vectra QPTIFF | *.qptiff | [Akoya Biosciences](https://www.akoyabio.com/software-data-analysis/) | [PerkinElmer Vectra](https://www.akoyabio.com/phenoimager/instruments/vectra-3-0/) |
 | **OMETIFF** | [OME-TIFF](https://ome-model.readthedocs.io/en/stable/ome-tiff/) | *.ome.tif, *.ome.tiff, *.ome.tf2, *.ome.tf8, *.ome.btf | [Open Microscopy Environment](https://www.openmicroscopy.org/) | - |
 | **PHTIFF** | Philips TIFF | *.tif, *.tiff | [Philips](https://www.philips.com/healthcare) | [Philips IntelliSite Pathology Solution](https://www.usa.philips.com/healthcare/resources/feature-detail/intellisite-pathology-solution) |
+| **MRXS**   | [3DHISTECH MIRAX](https://www.3dhistech.com/) | *.mrxs, Slidedat.ini | [3DHISTECH](https://www.3dhistech.com/) | [Pannoramic scanners](https://www.3dhistech.com/solutions/) |
 | **GDAL**   | Common image formats (JPEG, PNG, TIFF, etc.) | *.jpeg, *.jpg, *.tif, *.tiff, *.png | - | - |
 
 Philips TIFF files use the generic `*.tif`/`*.tiff` extensions, so the PHTIFF driver identifies them by their
