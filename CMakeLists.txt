@@ -3,7 +3,7 @@ cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0091 NEW)
 
 set(PROJECT_NAME slideio-python)
-set(projectVersion 2.10)
+set(projectVersion 2.11)
 set(LIBRARY_NAME slideiopybind)
 
 # The slideio C++ library is resolved from an install prefix -- include/, lib/
