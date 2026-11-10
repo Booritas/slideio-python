@@ -48,11 +48,17 @@ The following table lists the currently implemented drivers and their correspond
 | **QPTIFF** | PerkinElmer Vectra QPTIFF | *.qptiff | [Akoya Biosciences](https://www.akoyabio.com/software-data-analysis/) | [PerkinElmer Vectra](https://www.akoyabio.com/phenoimager/instruments/vectra-3-0/) |
 | **OMETIFF** | [OME-TIFF](https://ome-model.readthedocs.io/en/stable/ome-tiff/) | *.ome.tif, *.ome.tiff, *.ome.tf2, *.ome.tf8, *.ome.btf | [Open Microscopy Environment](https://www.openmicroscopy.org/) | - |
 | **PHTIFF** | Philips TIFF | *.tif, *.tiff | [Philips](https://www.philips.com/healthcare) | [Philips IntelliSite Pathology Solution](https://www.usa.philips.com/healthcare/resources/feature-detail/intellisite-pathology-solution) |
+| **MRXS**   | 3DHISTECH MIRAX | *.mrxs | [3DHISTECH](https://www.3dhistech.com/) | [3DHISTECH Pannoramic](https://www.3dhistech.com/) |
+| **BIF**    | [Ventana BIF](https://diagnostics.roche.com/global/en/products/instruments/ventana-dp-200-ins-2575.html) | *.bif | [Roche Diagnostics](https://diagnostics.roche.com/) | Tested with Ventana iScan (Coreo/HT, 2011) and [VENTANA DP 200](https://diagnostics.roche.com/global/en/products/instruments/ventana-dp-200-ins-2575.html) |
 | **GDAL**   | Common image formats (JPEG, PNG, TIFF, etc.) | *.jpeg, *.jpg, *.tif, *.tiff, *.png | - | - |
 
 Philips TIFF files use the generic `*.tif`/`*.tiff` extensions, so the PHTIFF driver identifies them by their
 embedded metadata. `open_slide` with the default `driver="AUTO"` therefore selects the right driver, while plain
 TIFF files continue to be read by GDAL and OME-TIFF files by the OMETIFF driver.
+
+A Ventana BIF file opens with one scene per scanned area (`AOI0`, `AOI1`, ...), as QuPath shows them; the
+label, thumbnail and probability-map images are auxiliary images of the slide. Z-stack BIF files are refused
+with an error for now.
 
 To learn more about the library and additional features, visit the [SlideIO Website](https://booritas.github.io/slideio/).
 
