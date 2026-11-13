@@ -50,6 +50,8 @@ The following table lists the currently implemented drivers and their correspond
 | **PHTIFF** | Philips TIFF | *.tif, *.tiff | [Philips](https://www.philips.com/healthcare) | [Philips IntelliSite Pathology Solution](https://www.usa.philips.com/healthcare/resources/feature-detail/intellisite-pathology-solution) |
 | **MRXS**   | 3DHISTECH MIRAX | *.mrxs | [3DHISTECH](https://www.3dhistech.com/) | [3DHISTECH Pannoramic](https://www.3dhistech.com/) |
 | **BIF**    | [Ventana BIF](https://diagnostics.roche.com/global/en/products/instruments/ventana-dp-200-ins-2575.html) | *.bif | [Roche Diagnostics](https://diagnostics.roche.com/) | Tested with Ventana iScan (Coreo/HT, 2011) and [VENTANA DP 200](https://diagnostics.roche.com/global/en/products/instruments/ventana-dp-200-ins-2575.html) |
+| **LIF**    | Leica LIF | *.lif | [Leica Microsystems](https://www.leica-microsystems.com/) | Tested with Leica LAS X files from the [Bio-Formats](https://www.openmicroscopy.org/bio-formats/) sample set |
+| **ND2**    | Nikon ND2 | *.nd2 | [Nikon](https://www.microscope.healthcare.nikon.com/) | Tested with NIS-Elements files from the [Bio-Formats](https://www.openmicroscopy.org/bio-formats/) sample set |
 | **GDAL**   | Common image formats (JPEG, PNG, TIFF, etc.) | *.jpeg, *.jpg, *.tif, *.tiff, *.png | - | - |
 
 Philips TIFF files use the generic `*.tif`/`*.tiff` extensions, so the PHTIFF driver identifies them by their
@@ -59,6 +61,17 @@ TIFF files continue to be read by GDAL and OME-TIFF files by the OMETIFF driver.
 A Ventana BIF file opens with one scene per scanned area (`AOI0`, `AOI1`, ...), as QuPath shows them; the
 label, thumbnail and probability-map images are auxiliary images of the slide. Z-stack BIF files are refused
 with an error for now.
+
+A MIRAX slide is a bundle: the `.mrxs` file plus a data directory of the same name beside it. Pass the `.mrxs`
+file to `open_slide`, or the bundle's `Slidedat.ini` when the data directory was copied without it.
+
+Leica LIF and Nikon ND2 are microscopy containers rather than slide formats, and neither has a zoom pyramid:
+each scene has a single level. A LIF project opens with one scene per image, named by its folder path inside
+the project (`TileScan 1/Merged`); a tile scan gives one scene per field (`.../Field 1`, `.../Field 2`, ...), as
+Bio-Formats and QuPath show it. An image the driver cannot read is left out of the scene list with a warning
+rather than failing the whole project. An ND2 file opens with one scene per XY position, with Z slices and time
+frames from the experiment loops. Both report per-plane timestamps where the file records them
+(`Scene.has_plane_timestamps`, `Scene.get_plane_timestamp`).
 
 To learn more about the library and additional features, visit the [SlideIO Website](https://booritas.github.io/slideio/).
 
