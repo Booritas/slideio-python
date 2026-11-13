@@ -135,7 +135,7 @@ Conan cache for slideio's dependencies.
   set for one platform. Each is triggered either by `workflow_dispatch` or by
   `workflow_call` from `release.yml`, and takes three inputs when called:
   `ci_pipeline_iid` (the version's patch component, default `'0'`),
-  `artifact_name`, and — macOS only — `os` (`macos-14` or `macos-15-intel`).
+  `artifact_name`, and — macOS only — `os` (`macos-15` or `macos-15-intel`).
   They check out submodules recursively, cache `~/.conan2` under the
   `extern/slideio` commit, build the C++ library with `build-slideio.py`, then
   run the platform's wheel script. No Conan remote and no credentials are

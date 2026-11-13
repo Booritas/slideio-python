@@ -90,7 +90,7 @@ jobs:
     if: contains(fromJson('["all","macos"]'), github.event.inputs.platforms || 'all')
     uses: ./.github/workflows/macos-wheels.yml
     with:
-      os: macos-14
+      os: macos-15
       ci_pipeline_iid: ${{ needs.check-version.outputs.patch }}
       artifact_name: wheels-macos-arm64
 

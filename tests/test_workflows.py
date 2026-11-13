@@ -374,10 +374,10 @@ class TestWheelWorkflows(unittest.TestCase):
 
     def test_macos_offers_both_architectures_to_both_triggers(self):
         on = triggers(load('macos-wheels.yml'))
-        self.assertEqual('macos-14',
+        self.assertEqual('macos-15',
                          on['workflow_call']['inputs']['os']['default'])
         self.assertEqual(
-            ['macos-14', 'macos-15-intel'],
+            ['macos-15', 'macos-15-intel'],
             on['workflow_dispatch']['inputs']['os']['options'])
 
     def test_each_caches_conan_under_the_submodule_commit(self):
@@ -599,7 +599,7 @@ class TestRelease(unittest.TestCase):
             self.assertTrue(name.startswith('wheels-'), name)
 
     def test_both_macos_architectures_are_built(self):
-        self.assertEqual('macos-14',
+        self.assertEqual('macos-15',
                          self.jobs['wheels-macos-arm64']['with']['os'])
         self.assertEqual('macos-15-intel',
                          self.jobs['wheels-macos-x86_64']['with']['os'])

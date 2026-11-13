@@ -8,7 +8,7 @@ on:
       os:
         description: 'Operating System'
         required: false
-        default: 'macos-14'
+        default: 'macos-15'
         type: string
       ci_pipeline_iid:
         description: 'Patch component of the package version'
@@ -25,10 +25,10 @@ on:
       os:
         description: 'Operating System'
         required: true
-        default: 'macos-14'
+        default: 'macos-15'
         type: choice
         options:
-          - macos-14
+          - macos-15
           - macos-15-intel
 
 permissions:
