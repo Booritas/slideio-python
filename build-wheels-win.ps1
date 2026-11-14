@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $minversion = 9
-$maxversion = 14
+$maxversion = 15
 
 . .\lib.ps1
 

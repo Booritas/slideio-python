@@ -22,7 +22,7 @@ export MACOSX_DEPLOYMENT_TARGET=12.0
 os=$(uname -s)
 platform=$(uname -m)
 minversion=9
-maxversion=14
+maxversion=15
 if [[ "$os" == "Darwin" && "$platform" == "x86_64" ]]; then
   # On macOS Intel, cap the Python version at 3.13
   maxversion=13

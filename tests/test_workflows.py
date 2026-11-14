@@ -442,7 +442,7 @@ class TestBuildValidation(unittest.TestCase):
                 self.assertNotIn('needs', job)
 
     def test_no_job_runs_a_full_wheel_script(self):
-        # The gate builds one wheel per platform; the 3.9-3.14 loop the wheel
+        # The gate builds one wheel per platform; the 3.9-3.15 loop the wheel
         # scripts run is roughly six times the cost.
         #
         # Checked against the steps' own `run:` text rather than the whole
@@ -643,6 +643,55 @@ class TestRelease(unittest.TestCase):
         parameters = releases[0]['with']
         self.assertTrue(parameters['draft'])
         self.assertTrue(parameters['fail_on_unmatched_files'])
+
+
+class TestManylinuxContainer(unittest.TestCase):
+    # The gate and the release build Linux wheels in the same stock manylinux
+    # image and install the build tools into it with setup-manylinux.sh. A
+    # stale custom image is how a release ends up without a CPython the
+    # scripts ask for: build-wheels-manylinux.sh builds whatever /opt/python
+    # holds, and skips the rest without failing.
+    JOBS = (('linux-wheels.yml', 'build-linux'),
+            ('build-validation.yml', 'manylinux'))
+    IMAGE = 'quay.io/pypa/manylinux_2_28_x86_64:'
+
+    def jobs(self):
+        for name, job_name in self.JOBS:
+            yield name, load(name)['jobs'][job_name]
+
+    def test_both_jobs_use_one_stock_image(self):
+        images = {name: job['container']['image']
+                  for name, job in self.jobs()}
+        for name, image in images.items():
+            with self.subTest(workflow=name):
+                self.assertTrue(image.startswith(self.IMAGE), image)
+        self.assertEqual(1, len(set(images.values())), images)
+
+    def test_build_tools_are_installed_before_the_build(self):
+        for name, job in self.jobs():
+            with self.subTest(workflow=name):
+                runs = [str(step.get('run', '')) for step in job['steps']]
+                setup_index = next(
+                    (i for i, run in enumerate(runs)
+                     if 'setup-manylinux.sh' in run), None)
+                build_index = next(
+                    (i for i, run in enumerate(runs)
+                     if 'build-slideio.py' in run), None)
+                self.assertIsNotNone(setup_index, 'no setup step found')
+                self.assertIsNotNone(build_index, 'no build step found')
+                self.assertLess(setup_index, build_index)
+
+    def test_conan_cache_is_keyed_on_the_image_tag(self):
+        # Binaries built in one image must not be restored into another.
+        for name, job in self.jobs():
+            with self.subTest(workflow=name):
+                tag = job['container']['image'].split(':', 1)[1]
+                caches = [step for step in job['steps']
+                          if str(step.get('uses', '')).startswith(
+                              'actions/cache')]
+                self.assertEqual(1, len(caches))
+                self.assertIn(tag, caches[0]['with']['key'])
+                self.assertIn(tag, caches[0]['with']['restore-keys'])
 
 
 if __name__ == '__main__':

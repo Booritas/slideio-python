@@ -99,7 +99,7 @@ Conan step at all.
 | Git | Submodules are required, see below |
 | CMake 3.10+ | |
 | A C++17 compiler | GCC, Clang, or Visual Studio 2022 on Windows |
-| Python 3.9+ | Wheels are published for 3.9–3.14; pybind11 3.1 sets the 3.9 floor |
+| Python 3.9+ | Wheels are published for 3.9–3.15; pybind11 3.1 sets the 3.9 floor |
 | **[Conan 2](https://conan.io)** | **Required** to build the C++ library: `pip install conan` |
 | `distro` | Linux only: `pip install distro` |
 | `build` | `pip install build` — only if you want a wheel rather than an install |
@@ -171,7 +171,7 @@ wheel is self-contained.
 ### Building wheels for every supported Python version
 
 Each platform has a script that loops over a range of Python versions, building one
-wheel per version — 3.9–3.14 on macOS, Windows and manylinux (3.13 is the cap on
+wheel per version — 3.9–3.15 on macOS, Windows and manylinux (3.13 is the cap on
 macOS Intel). They build the C++ library once up front, then rebuild only
 the extension per version.
 
@@ -194,17 +194,19 @@ inside `build-wheels-manylinux.sh` and land in `wheelhouse/`.
 
 ### Building on Linux with the manylinux Docker container
 
-The container already carries the toolchain and a prebuilt Conan cache, so the
-build goes straight to compiling slideio itself.
+CI builds in the stock manylinux image and installs the build tools into it with
+`setup-manylinux.sh`; the same works locally. The first build compiles slideio's
+Conan dependencies from source.
 
 ```bash
 git clone --recurse-submodules https://github.com/Booritas/slideio-python.git
 
 docker run --name slideio -it \
   -v "$(pwd)/slideio-python:/slideio-python" \
-  booritas/slideio-manylinux_2_28_x86_64:2.10.0 bash
+  quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1 bash
 
 cd /slideio-python
+./setup-manylinux.sh
 ./build-wheels-manylinux.sh
 ```
 

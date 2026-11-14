@@ -1,7 +1,7 @@
 name: Build Validation
 
 # The per-commit gate. One wheel per platform, for one Python version, and the
-# tests/ suite against it -- not the 3.9-3.14 loop the wheel workflows run,
+# tests/ suite against it -- not the 3.9-3.15 loop the wheel workflows run,
 # which is roughly six times the work and belongs to a release.
 #
 # release.yml is the other half and is untouched by anything here.
@@ -63,10 +63,9 @@ jobs:
     name: manylinux_2_28 (x86_64)
     runs-on: ubuntu-latest
     container:
-      # Pinned, and the same image the wheels ship from. 2.10.0 carries a
-      # prebuilt conan cache for slideio's dependencies, which is what makes
-      # building the C++ library from source per commit affordable.
-      image: booritas/slideio-manylinux_2_28_x86_64:2.10.0
+      # Pinned, and the same image the wheels ship from (linux-wheels.yml);
+      # setup-manylinux.sh installs the build tools into it.
+      image: quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1
 
     steps:
     - uses: actions/checkout@v4
@@ -83,13 +82,19 @@ jobs:
         git config --global --add safe.directory "$GITHUB_WORKSPACE"
         echo "sha=$(git rev-parse HEAD:extern/slideio)" >> "$GITHUB_OUTPUT"
 
+    - name: install the build tools
+      shell: bash
+      run: ./setup-manylinux.sh
+
     - name: cache conan packages
       uses: actions/cache@v4
       with:
         path: ~/.conan2
-        key: conan-manylinux-${{ steps.slideio.outputs.sha }}
+        # The same key as linux-wheels.yml, so the gate and a release share
+        # one cache per image and submodule commit.
+        key: conan-manylinux-2026.11.14-1-${{ steps.slideio.outputs.sha }}
         restore-keys: |
-          conan-manylinux-
+          conan-manylinux-2026.11.14-1-
 
     - name: build the slideio C++ library
       shell: bash -el {0}

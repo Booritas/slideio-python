@@ -24,9 +24,10 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     container:
-      # 2.10.0 ships a prebuilt conan cache for slideio's dependencies, which is
-      # what makes building the C++ library from source in CI affordable.
-      image: booritas/slideio-manylinux_2_28_x86_64:2.10.0
+      # The stock manylinux image, pinned; setup-manylinux.sh installs what the
+      # custom image used to carry. A newer base -- a newer CPython -- is a tag
+      # change here and in build-validation.yml, plus the cache key below.
+      image: quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1
 
     env:
       # An input rather than an inherited variable: workflow-level env in the
@@ -58,13 +59,21 @@ jobs:
         git config --global --add safe.directory "$GITHUB_WORKSPACE/slideio"
         echo "sha=$(git rev-parse HEAD:extern/slideio)" >> "$GITHUB_OUTPUT"
 
+    - name: install the build tools
+      shell: bash
+      working-directory: slideio
+      run: ./setup-manylinux.sh
+
     - name: cache conan packages
       uses: actions/cache@v4
       with:
         path: ~/.conan2
-        key: conan-manylinux-${{ steps.slideio.outputs.sha }}
+        # Keyed on the base image as well as the submodule: binaries built in
+        # one image are not restored into another, whose system packages and
+        # toolset may differ.
+        key: conan-manylinux-2026.11.14-1-${{ steps.slideio.outputs.sha }}
         restore-keys: |
-          conan-manylinux-
+          conan-manylinux-2026.11.14-1-
 
     - name: build the slideio C++ library
       shell: bash -el {0}

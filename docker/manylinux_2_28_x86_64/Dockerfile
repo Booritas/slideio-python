@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2026.01.03-1
+FROM quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1
 
 ENV CONAN_REVISIONS_ENABLED=1
 WORKDIR /opt
@@ -43,11 +43,10 @@ RUN echo "alias lsa='ls -lah'" >> /root/.bashrc && \
     echo "alias la='ls -lAh'" >> /root/.bashrc
 
 # Clone repositories with shallow depth
-RUN git clone --recursive --depth 1 --branch v2.7.4 https://github.com/Booritas/slideio-python.git /opt/slideio-python && \
-    git clone --depth 1 --branch v2.7.4 https://github.com/Booritas/conan-center-index.git /opt/conan-center-index
-
-ENV SLIDEIO_HOME=/opt/slideio-python
-ENV CONAN_INDEX_HOME=/opt/conan-center-index
+# RUN git clone --recursive --depth 1 --branch v2.7.4 https://github.com/Booritas/slideio-python.git /opt/slideio-python && \
+#     git clone --depth 1 --branch v2.7.4 https://github.com/Booritas/conan-center-index.git /opt/conan-center-index
+# ENV SLIDEIO_HOME=/opt/slideio-python
+# ENV CONAN_INDEX_HOME=/opt/conan-center-index
 
 # Uncomment to build SlideIO python packages
 #RUN cd /opt && git clone --recursive --depth 1 --branch v2.7.1 https://github.com/Booritas/slideio-python

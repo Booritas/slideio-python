@@ -105,17 +105,24 @@ One consequence to keep in mind: the CMake generator in the submodule's
 a Windows machine or CI runner moves to a newer Visual Studio, that line has to be
 updated in the submodule.
 
-Linux wheel builds are intended to run inside the manylinux Docker containers
-(`docker/`, images `booritas/slideio-manylinux_2_28_*`), which ship a prebuilt
-Conan cache for slideio's dependencies.
+Linux wheel builds run inside the stock `quay.io/pypa/manylinux_2_28_x86_64`
+image, pinned by tag in `linux-wheels.yml` and `build-validation.yml`.
+`setup-manylinux.sh` installs into it what the custom image under `docker/` used
+to carry -- system packages, the Perl fix-up OpenSSL's build needs, Conan, and
+`global.conf` -- so moving to a newer base (and with it a newer CPython) is a tag
+change in both workflows, not an image rebuild. The Conan cache key carries the
+same tag, so binaries built in one base are never restored into another; the
+first run on a new tag builds slideio's dependencies from source.
+`build-wheels-manylinux.sh` builds whatever `/opt/python` holds, so a CPython
+the scripts allow but the image lacks is skipped without an error.
 
 ### Multi-version wheel builds
 
 - All three scripts call `build-slideio.py` once before their Python-version loop; the loop itself only ever rebuilds the extension, never the C++ library.
-- `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.9–3.14 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
+- `build-wheels-win.ps1` (helpers in `lib.ps1`): loops over Python 3.9–3.15 using conda envs, runs `python -m build`, then `Repair-Naming` fixes the `.pyd` name inside each wheel.
 - `build-wheels-manylinux.sh`, `build-wheels-macos.sh` + `repair-wheels.sh` for
   the other platforms. The manylinux loop skips the image's free-threaded
-  interpreters (`cp313t`, `cp314t`): the extension carries pybind11's default
+  interpreters (`cp313t`, `cp314t`, `cp315t`): the extension carries pybind11's default
   GIL assumptions, and a wheel built by accident of a glob advertises support
   nothing has verified.
 - **macOS deployment target.** `build-wheels-macos.sh` exports
@@ -155,7 +162,7 @@ Python 3.12 wheel, then run `tests/` against it **when the
 `SLIDEIO_IMAGES_PATH` repository variable is set**; unset, each still builds
 its wheel but skips that step. No job has `needs`, so one platform failing
 does not hide the other two, and no job runs a `build-wheels-*` script: the
-3.9–3.14 loop is roughly six times the work and belongs to a release. The
+3.9–3.15 loop is roughly six times the work and belongs to a release. The
 Windows job calls `Repair-Naming` from `lib.ps1` after building, because an
 unrepaired Windows wheel does not import.
 
