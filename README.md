@@ -77,6 +77,35 @@ To learn more about the library and additional features, visit the [SlideIO Webs
 
 ---
 
+## Installation
+
+```bash
+pip install slideio
+```
+
+Wheels are self-contained — the slideio C++ libraries ship inside them — and are published for:
+
+| Platform | Python |
+|---|---|
+| Linux x86_64 (manylinux_2_28, glibc 2.28+) | 3.9–3.15 |
+| macOS arm64 (macOS 12+) | 3.9–3.15 |
+| macOS x86_64 (macOS 12+) | 3.9–3.13 |
+| Windows x86_64 | 3.9–3.15 |
+
+For any other platform or Python version, build from a clone of this repository, as described below.
+
+```python
+import slideio
+
+slide = slideio.open_slide("image.svs")   # driver="AUTO" picks the driver from the file
+scene = slide.get_scene(0)
+image = scene.read_block(size=(1000, 0))  # the whole scene, 1000 pixels wide
+```
+
+Changes between releases are listed in [CHANGELOG.md](CHANGELOG.md).
+
+---
+
 ## Building from source
 
 The C++ **SlideIO** library is not downloaded as a prebuilt package. It is the
