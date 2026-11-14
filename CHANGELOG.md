@@ -4,19 +4,6 @@ All notable changes to the slideio Python package are recorded here. Changes
 inside the C++ library are summarised as they affect a Python caller; the full
 history is in the [slideio repository](https://github.com/Booritas/slideio).
 
-## [Unreleased]
-
-### Build and CI
-
-- Wheels are built for CPython 3.9–3.15 on Linux, macOS arm64 and Windows.
-  macOS x86_64 stays at 3.9–3.13: the conda channel has no newer Python for
-  Intel macOS.
-- Linux CI builds in the stock `quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1`
-  image instead of the custom `booritas/slideio-manylinux_2_28_x86_64:2.10.0`,
-  whose base predates CPython 3.15. `setup-manylinux.sh` installs the build
-  tools at the start of each run, so a newer CPython is a tag change rather
-  than an image rebuild.
-
 ## [2.11.0] - 2026-11-14
 
 ### slideio C++ library
@@ -79,6 +66,14 @@ out-of-range index returns `0` rather than raising.
 
 ### Build and CI
 
+- Wheels are built for CPython 3.9–3.15 on Linux, macOS arm64 and Windows.
+  macOS x86_64 stays at 3.9–3.13: the conda channel has no newer Python for
+  Intel macOS.
+- Linux CI builds in the stock `quay.io/pypa/manylinux_2_28_x86_64:2026.11.14-1`
+  image instead of the custom `booritas/slideio-manylinux_2_28_x86_64:2.10.0`,
+  whose base predates CPython 3.15. `setup-manylinux.sh` installs the build
+  tools at the start of each run, so a newer CPython is a tag change rather
+  than an image rebuild.
 - macOS arm64 wheels are built on the `macos-15` runner; GitHub retired the
   `macos-14` label. The wheels' platform floor is unchanged at macOS 12.0.
 - Python-side tests for the new drivers: `tests/test_mrxs.py`,
