@@ -32,11 +32,19 @@ cpanm Scalar::Util
 # python3, pip3 and conan resolve to CPython 3.11 from /opt/python, as in the
 # image. The build only needs a Python to drive Conan and CMake; the wheels are
 # built per interpreter by build-wheels-manylinux.sh.
+#
+# --set, not priority alone: the yum install above pulls in the system python3
+# RPM, which registers /usr/bin/python3 at a far higher priority, and python3
+# would otherwise stay the system interpreter that has neither conan nor distro.
 py=/opt/python/cp311-cp311/bin
-update-alternatives --install /usr/bin/python3 python3 "$py/python3" 10
-update-alternatives --install /usr/bin/pip3 pip3 "$py/pip3" 10
 "$py/python3" -m pip install --no-cache-dir conan distro
-update-alternatives --install /usr/bin/conan conan "$py/conan" 10
+for tool in python3 pip3 conan; do
+    update-alternatives --install "/usr/bin/$tool" "$tool" "$py/$tool" 10
+    update-alternatives --set "$tool" "$py/$tool"
+done
+# Fail here, not halfway into the C++ build, if that did not take.
+python3 -c 'import distro, sys; print(sys.executable)'
+conan --version
 
 # Lets Conan install the system packages a recipe asks for with yum, without
 # sudo -- the container runs as root.
