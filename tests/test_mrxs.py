@@ -11,9 +11,10 @@ class TestMRXS(unittest.TestCase):
     def test_cmu_slide(self):
         # Geometry as OpenSlide reports it for the bundle (mirax/reference/manifest.json,
         # which MRXSCorpusGeometry in the C++ suite compares against). The label image
-        # can carry patient identifiers, so it is only listed, never read.
+        # can carry patient identifiers, so it is only listed, never read. Uncropped,
+        # because OpenSlide's level dimensions are the full canvas.
         path = get_test_image_path("mirax/openslide/CMU-1-Saved-1_16", "CMU-1-Saved-1_16.mrxs")
-        with slideio.open_slide(path, "AUTO") as slide:
+        with slideio.open_slide(path, "AUTO", {"mrxs.crop_to_content": False}) as slide:
             self.assertEqual(1, slide.num_scenes)
             self.assertEqual(["Label", "Macro", "Thumbnail"], sorted(slide.get_aux_image_names()))
             scene = slide.get_scene(0)
@@ -27,9 +28,30 @@ class TestMRXS(unittest.TestCase):
                 [(7436, 15494), (3718, 7747), (1859, 3873), (929, 1936), (464, 968), (232, 484)],
                 [(size.width, size.height) for size in levels])
 
+    def test_cmu_slide_is_cropped_by_default(self):
+        # mrxs.crop_to_content defaults to true: the scene is the scanned area's bounding
+        # box, as QuPath shows it, with its corner at (0, 0).
+        path = get_test_image_path("mirax/openslide/CMU-1-Saved-1_16", "CMU-1-Saved-1_16.mrxs")
+        full = {"mrxs.crop_to_content": False}
+        with slideio.open_slide(path, "AUTO") as cropped, \
+                slideio.open_slide(path, "AUTO", {"mrxs.crop_to_content": True}) as explicit, \
+                slideio.open_slide(path, "AUTO", full) as uncropped:
+            scene, whole = cropped.get_scene(0), uncropped.get_scene(0)
+            x, y, w, h = scene.rect
+            self.assertEqual((0, 0), (x, y))
+            self.assertLessEqual(w, 7436)
+            self.assertLessEqual(h, 15494)
+            self.assertTrue(w < 7436 or h < 15494)
+            self.assertEqual(scene.rect, explicit.get_scene(0).rect)
+            self.assertEqual(whole.num_zoom_levels, scene.num_zoom_levels)
+            for i in range(scene.num_zoom_levels):
+                small, big = scene.get_zoom_level_info(i).size, whole.get_zoom_level_info(i).size
+                self.assertLessEqual(small.width, big.width)
+                self.assertLessEqual(small.height, big.height)
+
     def test_cmu_scaled_read(self):
         path = get_test_image_path("mirax/openslide/CMU-1-Saved-1_16", "CMU-1-Saved-1_16.mrxs")
-        with slideio.open_slide(path, "AUTO") as slide:
+        with slideio.open_slide(path, "AUTO", {"mrxs.crop_to_content": False}) as slide:
             raster = slide.get_scene(0).read_block(size=(200, 0))
             self.assertEqual((417, 200, 3), raster.shape)
             self.assertGreater(raster.std(), 0)

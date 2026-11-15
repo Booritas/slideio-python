@@ -290,8 +290,9 @@ class Slide(object):
     '''Slide class represents slides, normally a single image file or a folder.
     Slide contains a collection of scenes - separate images.
     '''
-    def __init__(self, path:str, driver:str):
-        self.slide = core_open_slide(path, driver)
+    def __init__(self, path:str, driver:str, options:dict=None):
+        '''options: open options, as for open_slide.'''
+        self.slide = core_open_slide(path, driver, _option_strings(options))
 
     def __repr__(self):
         return self.slide.__repr__()
@@ -392,14 +393,37 @@ def convert_scene(scene, params, output_path, callback=None):
     else:
         core_convert_scene_ex(scene.scene, params, output_path, callback)
 
-def open_slide(path:str, driver:str='AUTO'):
+def _option_strings(options):
+    '''Open options as the string map the C++ library takes: bools become
+    "true"/"false", numbers their str(), strings pass through.'''
+    if options is None:
+        return {}
+    converted = {}
+    for key, value in options.items():
+        if isinstance(value, bool):     # before int: a bool is an int
+            converted[key] = "true" if value else "false"
+        elif isinstance(value, (int, float)):
+            converted[key] = str(value)
+        elif isinstance(value, str):
+            converted[key] = value
+        else:
+            raise TypeError("open option '%s': unsupported value type %s" % (key, type(value).__name__))
+    return converted
+
+def open_slide(path:str, driver:str='AUTO', options:dict=None):
     '''Returns an instance of a slide object
 
     Args:
         path: a path to the image file
         driver: name of the driver or "AUTO" for automatic driver selection
+        options: open options, a dict of "<driver-id>.<name>" keys. Keys for a
+            driver other than the one opening the file are ignored; an unknown
+            driver prefix or option name raises. Known options:
+            "mrxs.crop_to_content" (default True): the MRXS scene is the
+            bounding box of the scanned area, as QuPath shows it; False gives
+            the full canvas OpenSlide reports.
     '''
-    slide = Slide(path, driver)
+    slide = Slide(path, driver, options)
     return slide
 
 def get_driver_ids():

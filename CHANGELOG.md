@@ -9,7 +9,7 @@ history is in the [slideio repository](https://github.com/Booritas/slideio).
 ### slideio C++ library
 
 The `extern/slideio` submodule moves from `b054e5ac` (slideio 2.10.0) to
-`73ea70ab` (slideio 2.11.0).
+`e2ceb224` (slideio 2.11.0).
 
 ### New image drivers
 
@@ -26,6 +26,9 @@ All four are picked up by `open_slide` with the default `driver="AUTO"`.
   of the same name. Pass the `.mrxs` file to `open_slide`, or the bundle's
   `Slidedat.ini` when the data directory was copied without it. Label and
   macro images are exposed as auxiliary images, and reads may run concurrently.
+  The scene is cropped to the bounding box of the scanned area by default, as
+  QuPath shows it; pass `options={"mrxs.crop_to_content": False}` for the full
+  canvas OpenSlide reports.
 - **BIF** — one scene per scanned area (`AOI0`, `AOI1`, ...), as QuPath shows
   them. The label, thumbnail and probability-map images are auxiliary images of
   the slide. Z-stack BIF files are refused with an error for now.
@@ -39,6 +42,11 @@ All four are picked up by `open_slide` with the default `driver="AUTO"`.
   files are read, including legacy files with 9- to 15-bit codestreams. A file
   missing its chunk-map trailer is recovered by scanning instead of being
   refused. Each scene has a single level.
+
+`open_slide` and `Slide` take an `options` dict of driver-namespaced open
+options (`"<driver-id>.<name>"`). Keys for other drivers are ignored; an unknown
+driver prefix or option name raises before the file is opened. Booleans and
+numbers are converted to the strings the library expects.
 
 LIF and ND2 report per-plane timestamps where the file records them
 (`Scene.has_plane_timestamps`, `Scene.get_plane_timestamp`). For ND2, an
