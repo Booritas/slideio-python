@@ -24,7 +24,9 @@ PYBIND11_MODULE(slideiopybind, m) {
     m.def("open_slide", &pyOpenSlide,
         py::arg("file_path"),
         py::arg("driver_id"),
-        "Opens an image slide. Returns Slide object.");
+        py::arg("options") = std::map<std::string, std::string>(),
+        "Opens an image slide. Returns Slide object. options: driver-namespaced open options, "
+        "e.g. {'mrxs.crop_to_content': 'false'}.");
     m.def("set_log_level", &pySetLogLevel,
         py::arg("log_level"),
         "Sets log level for the library.");

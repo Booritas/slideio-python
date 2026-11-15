@@ -3,8 +3,11 @@
 // of this distribution and at http://slideio.com/license.html.
 #pragma once
 #include "pyslide.hpp"
+#include <map>
+#include <string>
 
-std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string& driver);
+std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string& driver,
+                                     const std::map<std::string, std::string>& options);
 std::vector<std::string> pyGetDriverIDs();
 void pySetLogLevel(const std::string& level);
 std::string pyGetVersion();

@@ -7,9 +7,10 @@
 
 namespace py = pybind11;
 
-std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string& driver)
+std::shared_ptr<PySlide> pyOpenSlide(const std::string& path, const std::string& driver,
+                                     const std::map<std::string, std::string>& options)
 {
-    std::shared_ptr<slideio::Slide> slide = slideio::openSlide(path, driver);
+    std::shared_ptr<slideio::Slide> slide = slideio::openSlide(path, driver, options);
     if(!slide)
     {
         RAISE_PYERROR << "Cannot open file \"" << path << "\" with driver \"" << driver << "\"";
