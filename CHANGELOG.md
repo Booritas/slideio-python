@@ -9,7 +9,7 @@ history is in the [slideio repository](https://github.com/Booritas/slideio).
 ### slideio C++ library
 
 The `extern/slideio` submodule moves from `b054e5ac` (slideio 2.10.0) to
-`73ea70ab` (slideio 2.11.0).
+`e2ceb224` (slideio 2.11.0).
 
 ### New image drivers
 
