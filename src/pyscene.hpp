@@ -16,6 +16,7 @@ namespace slideio
 class PyScene
 {
     friend std::shared_ptr<slideio::Scene> extractScene(std::shared_ptr<PyScene> pyScene);
+    friend std::shared_ptr<slideio::Slide> extractSlide(std::shared_ptr<PyScene> pyScene);
 public:
     PyScene(std::shared_ptr<slideio::Scene> scene, std::shared_ptr<slideio::Slide> slide);
     ~PyScene(){
@@ -72,3 +73,4 @@ private:
 };
 
 std::shared_ptr<slideio::Scene> extractScene(std::shared_ptr<PyScene> pyScene);
+std::shared_ptr<slideio::Slide> extractSlide(std::shared_ptr<PyScene> pyScene);

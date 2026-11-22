@@ -388,3 +388,8 @@ std::shared_ptr<slideio::Scene> extractScene(std::shared_ptr<PyScene> pyScene)
 {
     return pyScene->m_scene;
 }
+
+std::shared_ptr<slideio::Slide> extractSlide(std::shared_ptr<PyScene> pyScene)
+{
+    return pyScene->m_slide;
+}

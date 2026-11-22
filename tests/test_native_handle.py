@@ -67,6 +67,8 @@ def test_handle_outlives_slide_and_scene(tmp_path):
     handle = scene._native_handle()
     del scene, slide
     gc.collect()
+    # This cannot tell the aliasing constructor from a plain copy; review and the
+    # slideio-processor consumer test are the real guards.
     assert _capsule_valid(handle, _NAME)
     del handle
     gc.collect()  # capsule destructor releases the last owner; must not crash
@@ -97,6 +99,18 @@ def test_slide_aux_image_scene_has_a_handle():
     aux = slide.get_aux_image(slide.get_aux_image_names()[0])
     handle = aux._native_handle()
     del aux, slide
+    gc.collect()
+    # Python cannot observe slide liveness directly; a use-after-free would crash here or later.
+    assert _capsule_valid(handle, _NAME)
+    assert _capsule_pointer(handle, _NAME)
+
+
+def test_transformed_scene_has_a_handle_that_outlives_the_source(tmp_path):
+    slide = slideio.open_slide(_png(tmp_path), "GDAL")
+    scene = slide.get_scene(0)
+    transformed = slideio.transform_scene(scene, [slideio.GaussianBlurFilter()])
+    handle = transformed._native_handle()
+    del transformed, scene, slide
     gc.collect()
     # Python cannot observe slide liveness directly; a use-after-free would crash here or later.
     assert _capsule_valid(handle, _NAME)

@@ -57,7 +57,10 @@ that cannot share C++ symbols or pybind11 types with this one. It returns a
 `std::shared_ptr<PyScene>` the method is called on, so it also keeps the slide
 alive. `PyScene` must therefore hold no Python objects: the last owner may
 release it on a thread without the interpreter lock. Both packages must be built
-from the same SlideIO commit. Changing the method name, capsule name or pointee
+from the same SlideIO commit. A `std::shared_ptr` and a `slideio::Scene` vtable
+cross the module boundary, so both modules also need an ABI-compatible C++
+standard library: the same MSVC runtime family, the same libstdc++
+`_GLIBCXX_USE_CXX11_ABI` setting under manylinux, and the same libc++ on macOS. Changing the method name, capsule name or pointee
 type breaks both packages.
 
 ## Build system

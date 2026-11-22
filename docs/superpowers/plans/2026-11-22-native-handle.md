@@ -30,7 +30,7 @@ conda run -n slideio python -m build --wheel --outdir <S>\dist
 Push-Location <S>; . <R>\lib.ps1; Repair-Naming; Pop-Location   # Repair-Naming works on .\dist of the cwd
 conda run -n slideio python -m venv <S>\venv
 & <S>\venv\Scripts\python.exe -m pip install pytest pillow numpy pyyaml
-& <S>\venv\Scripts\python.exe -m pip install --force-reinstall --no-index --find-links <S>\dist slideio
+& <S>\venv\Scripts\python.exe -m pip install --force-reinstall --no-deps --no-index --find-links <S>\dist slideio
 Set-Location <S>; & <S>\venv\Scripts\python.exe -m pytest <R>\tests
 ```
 
@@ -39,7 +39,7 @@ Never run `Repair-Naming` from `<R>`: `<R>\dist` holds old release wheels it wou
 ## Review Focus
 
 1. A capsule outliving every Python `Slide`/`Scene` object: the slide must still be alive — the aliasing constructor in N2 is the only thing that guarantees this; a plain `extractScene(self)` copy compiles and passes every Python-visible test.
-2. An auxiliary-image scene (`Scene.get_aux_image`) returns a working handle too (it is a `PyScene` like any other).
+2. An auxiliary-image scene (`CoreScene.get_aux_image`; the public wrapper's `Scene.get_aux_image` returns an ndarray) returns a working handle too (it is a `PyScene` like any other).
 3. Two calls return two independent capsules; deleting one leaves the other valid.
 4. A closed public `slideio.Scene` (after `close()`) fails the same way every other method on a closed scene fails; no capsule with a null pointer.
 5. A wheel test run that silently uses the source tree instead of the installed wheel (see CLAUDE.md): tests must run from `<S>`.
