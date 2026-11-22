@@ -34,6 +34,6 @@ std::shared_ptr<PyScene> pyTransformScene(std::shared_ptr<PyScene>& pyScene, con
     }
     std::shared_ptr<slideio::Scene> scene = extractScene(pyScene);
     std::shared_ptr<Scene> transformScene = slideio::transformSceneEx(scene, transformations);
-    std::shared_ptr<PyScene> wrapper(new PyScene(transformScene, nullptr));
+    std::shared_ptr<PyScene> wrapper(new PyScene(transformScene, extractSlide(pyScene)));
     return wrapper;
 }

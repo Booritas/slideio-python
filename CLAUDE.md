@@ -46,6 +46,23 @@ inside the manylinux container.
 
 When adding/changing API: a change usually touches `src/pybind.cpp` (binding), `slideio/core/__init__.py` (re-export), `slideio/wrappers/py_slideio.py` (wrapper), and `slideio/__init__.py` (public export).
 
+## Native scene handle
+
+`Scene._native_handle()` (on `slideio.Scene` and `slideio.core.CoreScene`) is the
+contract with slideio-processor's Python bindings, a separate extension module
+that cannot share C++ symbols or pybind11 types with this one. It returns a
+`PyCapsule` named `"slideio.Scene"` whose pointer is a `new`-allocated
+`std::shared_ptr<slideio::Scene>`, freed by the capsule destructor with
+`delete`. The pointer is built with the aliasing constructor from the
+`std::shared_ptr<PyScene>` the method is called on, so it also keeps the slide
+alive. `PyScene` must therefore hold no Python objects: the last owner may
+release it on a thread without the interpreter lock. Both packages must be built
+from the same SlideIO commit. A `std::shared_ptr` and a `slideio::Scene` vtable
+cross the module boundary, so both modules also need an ABI-compatible C++
+standard library: the same MSVC runtime family, the same libstdc++
+`_GLIBCXX_USE_CXX11_ABI` setting under manylinux, and the same libc++ on macOS. Changing the method name, capsule name or pointee
+type breaks both packages.
+
 ## Build system
 
 `setup.py` defines a `CMakeBuild` extension command that invokes CMake (Visual Studio 17 2022 / x64 on Windows, Makefiles elsewhere). CMake resolves the slideio C++ library from an install prefix — `include/`, `lib/`, `bin/` — in one of two ways:

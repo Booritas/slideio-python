@@ -4,6 +4,29 @@ All notable changes to the slideio Python package are recorded here. Changes
 inside the C++ library are summarised as they affect a Python caller; the full
 history is in the [slideio repository](https://github.com/Booritas/slideio).
 
+## [Unreleased]
+
+### Python API
+
+`Scene._native_handle()` returns a PyCapsule named `"slideio.Scene"` holding a
+`std::shared_ptr<slideio::Scene>` that keeps the scene and its slide alive. It
+is internal: slideio-processor's Python bindings use it to run a pipeline on a
+scene opened with this package. It is not part of the documented API.
+
+A scene from `Slide.get_aux_image` or from `transform_scene` keeps its slide's
+files open until it is dropped, even after `Slide.close()`, as regular scenes
+already did.
+
+### slideio C++ library
+
+The `extern/slideio` submodule moves from `e2ceb224` (slideio 2.11.0) to
+`edda013a`.
+
+An OME-TIFF pyramid level whose whole image fits in a single tile smaller than
+the tile size is now read cropped to the image size instead of stretched to the
+tile size, so `read_block` on such a level returns the pixels the file holds
+(Booritas/slideio PR #102).
+
 ## [2.11.0] - 2026-11-14
 
 ### slideio C++ library
@@ -91,5 +114,6 @@ out-of-range index returns `0` rather than raising.
 
 Baseline for this changelog.
 
+[Unreleased]: https://github.com/Booritas/slideio-python/compare/v2.11.0...HEAD
 [2.11.0]: https://github.com/Booritas/slideio-python/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/Booritas/slideio-python/releases/tag/v2.10.0

@@ -168,6 +168,15 @@ class Scene(object):
         '''Parsed ICC header of the scene colour profile, as a ColorProfileInfo.'''
         return self.scene.get_color_profile_info()
 
+    def _native_handle(self):
+        '''Internal, for slideio-processor; not part of the public API.
+
+        Returns a new PyCapsule named "slideio.Scene" holding a
+        std::shared_ptr<slideio::Scene> that keeps the scene and its slide alive.
+        A closed scene raises AttributeError, as every other method does.
+        '''
+        return self.scene._native_handle()
+
     def get_aux_image(self, image_name, size=(0,0), channel_indices=None):
         '''Get auxiliary image as a numpy array.
 

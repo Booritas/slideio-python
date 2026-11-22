@@ -54,7 +54,7 @@ int PySlide::getNumAuxImages() const
 std::shared_ptr<PyScene> PySlide::getAuxImage(const std::string& imageName)
 {
     std::shared_ptr<slideio::Scene> scene = m_slide->getAuxImage(imageName);
-    std::shared_ptr<PyScene> wrapper(new PyScene(scene, nullptr));
+    std::shared_ptr<PyScene> wrapper(new PyScene(scene, m_slide));
     return wrapper;
 }
 

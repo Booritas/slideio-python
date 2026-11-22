@@ -16,6 +16,7 @@ namespace slideio
 class PyScene
 {
     friend std::shared_ptr<slideio::Scene> extractScene(std::shared_ptr<PyScene> pyScene);
+    friend std::shared_ptr<slideio::Slide> extractSlide(std::shared_ptr<PyScene> pyScene);
 public:
     PyScene(std::shared_ptr<slideio::Scene> scene, std::shared_ptr<slideio::Slide> slide);
     ~PyScene(){
@@ -64,8 +65,12 @@ private:
     void validateChannelDataTypes(const std::vector<int>& channelIndices) const;
 
 private:
+    // PyScene must hold no Python objects, only C++ shared pointers: the `_native_handle`
+    // capsule shares ownership of it, and its last owner may release it on a thread that
+    // does not hold the interpreter lock.
     std::shared_ptr<slideio::Scene> m_scene;
     std::shared_ptr<slideio::Slide> m_slide;
 };
 
 std::shared_ptr<slideio::Scene> extractScene(std::shared_ptr<PyScene> pyScene);
+std::shared_ptr<slideio::Slide> extractSlide(std::shared_ptr<PyScene> pyScene);
