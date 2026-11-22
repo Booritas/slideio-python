@@ -64,6 +64,9 @@ private:
     void validateChannelDataTypes(const std::vector<int>& channelIndices) const;
 
 private:
+    // PyScene must hold no Python objects, only C++ shared pointers: the `_native_handle`
+    // capsule shares ownership of it, and its last owner may release it on a thread that
+    // does not hold the interpreter lock.
     std::shared_ptr<slideio::Scene> m_scene;
     std::shared_ptr<slideio::Slide> m_slide;
 };

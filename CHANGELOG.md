@@ -6,6 +6,13 @@ history is in the [slideio repository](https://github.com/Booritas/slideio).
 
 ## [Unreleased]
 
+### Python API
+
+`Scene._native_handle()` returns a PyCapsule named `"slideio.Scene"` holding a
+`std::shared_ptr<slideio::Scene>` that keeps the scene and its slide alive. It
+is internal: slideio-processor's Python bindings use it to run a pipeline on a
+scene opened with this package. It is not part of the documented API.
+
 ### slideio C++ library
 
 The `extern/slideio` submodule moves from `e2ceb224` (slideio 2.11.0) to

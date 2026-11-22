@@ -93,6 +93,19 @@ PYBIND11_MODULE(slideiopybind, m) {
         .def("get_channel_name", &PyScene::getChannelName, py::arg("index"), "Returns channel name (if any)")
         .def("get_aux_image", &PyScene::getAuxImage, py::arg("image_name"), "Returns an auxiliary image object by name")
         .def("get_aux_image_names", &PyScene::getAuxImageNames, "Returns list of aux images")
+        .def("_native_handle", [](std::shared_ptr<PyScene> self) {
+                // The aliasing constructor points at the slideio::Scene but owns the PyScene,
+                // which holds the scene and its slide: the capsule keeps both alive.
+                auto* handle = new std::shared_ptr<slideio::Scene>(self, extractScene(self).get());
+                return py::capsule(handle, "slideio.Scene", [](PyObject* capsule) {
+                    delete static_cast<std::shared_ptr<slideio::Scene>*>(
+                        PyCapsule_GetPointer(capsule, "slideio.Scene"));
+                });
+            },
+            "INTERNAL, for slideio-processor; not part of the public API. Returns a PyCapsule named "
+            "'slideio.Scene' whose pointer is a heap-allocated std::shared_ptr<slideio::Scene>, freed by "
+            "the capsule destructor with delete. The pointer shares ownership with this scene, so the scene "
+            "and its slide stay valid while the pointer is held. Every call returns a new capsule.")
         .def_property_readonly("num_zoom_levels", &PyScene::getNumZoomLevels, "Number of levels in the scene image pyramid")
         .def("get_zoom_level_info", &PyScene::getZoomLevelInfo, py::arg("index"), "Returns zoom level info by index")
         .def("read_block", &PyScene::readBlock,
