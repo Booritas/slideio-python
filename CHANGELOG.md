@@ -4,7 +4,7 @@ All notable changes to the slideio Python package are recorded here. Changes
 inside the C++ library are summarised as they affect a Python caller; the full
 history is in the [slideio repository](https://github.com/Booritas/slideio).
 
-## [Unreleased]
+## [2.11.1] - 2026-11-22
 
 ### Python API
 
@@ -20,7 +20,7 @@ already did.
 ### slideio C++ library
 
 The `extern/slideio` submodule moves from `e2ceb224` (slideio 2.11.0) to
-`edda013a`.
+`39ab9e24` (slideio 2.11.1).
 
 An OME-TIFF pyramid level whose whole image fits in a single tile smaller than
 the tile size is now read cropped to the image size instead of stretched to the
@@ -114,6 +114,6 @@ out-of-range index returns `0` rather than raising.
 
 Baseline for this changelog.
 
-[Unreleased]: https://github.com/Booritas/slideio-python/compare/v2.11.0...HEAD
+[2.11.1]: https://github.com/Booritas/slideio-python/compare/v2.11.0...v2.11.1
 [2.11.0]: https://github.com/Booritas/slideio-python/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/Booritas/slideio-python/releases/tag/v2.10.0
