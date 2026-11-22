@@ -89,12 +89,15 @@ def test_closed_scene_has_no_handle(tmp_path):
         scene._native_handle()
 
 
-def test_aux_image_scene_has_a_handle():
+def test_slide_aux_image_scene_has_a_handle():
+    # No corpus image an existing test opens has scene-level aux images, so only the
+    # Slide.get_aux_image route is covered; PyScene::getAuxImage passes m_slide the same way.
     path = get_test_image_path("bif/openslide", "Ventana-1.bif")
     slide = slideio.open_slide(path, "AUTO")
     aux = slide.get_aux_image(slide.get_aux_image_names()[0])
     handle = aux._native_handle()
     del aux, slide
     gc.collect()
+    # Python cannot observe slide liveness directly; a use-after-free would crash here or later.
     assert _capsule_valid(handle, _NAME)
     assert _capsule_pointer(handle, _NAME)
